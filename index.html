@@ -1,0 +1,3528 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EduPortal - E-Learning Course & Online Quiz System</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- FontAwesome 6 Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <!-- Google Fonts Inter & Outfit -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <!-- Canvas Confetti for high-score celebrations -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Plus Jakarta Sans', 'sans-serif'],
+            display: ['Outfit', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              50: '#eef2ff',
+              100: '#e0e7ff',
+              200: '#c7d2fe',
+              300: '#a5b4fc',
+              400: '#818cf8',
+              500: '#6366f1',
+              600: '#4f46e5',
+              700: '#4338ca',
+              800: '#3730a3',
+              900: '#312e81',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* Custom scrollbars & smooth transitions */
+    ::-webkit-scrollbar {
+      width: 7px;
+      height: 7px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #f1f5f9;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+
+    /* Pulse animation for timer under pressure */
+    @keyframes pulse-critical {
+      0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+      50% { transform: scale(1.03); box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+    }
+    .timer-critical {
+      animation: pulse-critical 1.2s infinite;
+    }
+
+    /* Glassmorphism accents */
+    .glass-card {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(10px);
+    }
+    
+    .badge-shimmer {
+      background-size: 200% 200%;
+      animation: shimmer 2s linear infinite;
+    }
+    @keyframes shimmer {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans antialiased min-h-screen flex flex-col">
+
+  <!-- ==================== TOP NAVIGATION BAR ==================== -->
+  <header class="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-xs">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      
+      <!-- Brand & Mobile Menu Toggle -->
+      <div class="flex items-center gap-3">
+        <button id="mobileMenuBtn" class="md:hidden text-slate-500 hover:text-slate-800 p-2 rounded-lg hover:bg-slate-100">
+          <i class="fa-solid fa-bars text-lg"></i>
+        </button>
+        <div class="flex items-center gap-2.5 cursor-pointer" onclick="navigateToHome()">
+          <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-600 to-indigo-500 flex items-center justify-center text-white shadow-md shadow-brand-500/20">
+            <i class="fa-solid fa-graduation-cap text-xl"></i>
+          </div>
+          <div>
+            <span class="font-display font-extrabold text-xl tracking-tight text-slate-900 flex items-center gap-1.5">
+              Edu<span class="text-brand-600">Portal</span>
+              <span class="text-[10px] font-bold uppercase tracking-widest px-1.5 py-0.5 rounded bg-brand-50 text-brand-700 border border-brand-200">Pro</span>
+            </span>
+            <p class="text-[11px] text-slate-400 font-medium -mt-1 hidden sm:block">Institutional Learning & Assessment Platform</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Center Quick Role Evaluation Bar (Super convenient for testing both roles instantly) -->
+      <div class="hidden lg:flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200">
+        <span class="text-xs font-semibold text-slate-500 px-2 flex items-center gap-1.5">
+          <i class="fa-solid fa-bolt text-amber-500"></i> Quick Demo Role:
+        </span>
+        <button onclick="switchRoleFast('faculty')" id="quickRoleFacultyBtn" class="px-3 py-1 text-xs font-semibold rounded-lg transition-all flex items-center gap-1.5">
+          <i class="fa-solid fa-chalkboard-user"></i> Faculty (Dr. Sarah)
+        </button>
+        <button onclick="switchRoleFast('student')" id="quickRoleStudentBtn" class="px-3 py-1 text-xs font-semibold rounded-lg transition-all flex items-center gap-1.5">
+          <i class="fa-solid fa-user-graduate"></i> Student (Alex M.)
+        </button>
+      </div>
+
+      <!-- User Profile / Session Controls -->
+      <div class="flex items-center gap-3">
+        <!-- Notification Mock -->
+        <button onclick="showToast('You have no unread system notifications.', 'info')" class="w-9 h-9 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-100 flex items-center justify-center relative transition">
+          <i class="fa-regular fa-bell text-sm"></i>
+          <span class="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-brand-600"></span>
+        </button>
+
+        <!-- Current User Pill & Dropdown -->
+        <div id="userProfileNavPill" class="flex items-center gap-2.5 pl-2 pr-3 py-1.5 rounded-full border border-slate-200 bg-white hover:bg-slate-50 transition cursor-pointer" onclick="toggleUserDropdown()">
+          <img id="navUserAvatar" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80" alt="Avatar" class="w-7 h-7 rounded-full object-cover border border-slate-300">
+          <div class="text-left hidden sm:block">
+            <div id="navUserName" class="text-xs font-bold text-slate-800 leading-tight">Dr. Sarah Connor</div>
+            <div id="navUserRoleBadge" class="text-[10px] font-semibold text-brand-600 uppercase tracking-wide">FACULTY</div>
+          </div>
+          <i class="fa-solid fa-chevron-down text-slate-400 text-xs"></i>
+        </div>
+
+        <!-- User Dropdown Menu -->
+        <div id="userDropdownMenu" class="hidden absolute right-4 sm:right-8 top-16 w-56 bg-white rounded-2xl shadow-xl border border-slate-100 py-2 z-50">
+          <div class="px-4 py-2 border-b border-slate-100">
+            <p id="dropUserName" class="text-xs font-bold text-slate-900">Dr. Sarah Connor</p>
+            <p id="dropUserEmail" class="text-[11px] text-slate-500 truncate">sarah.connor@institution.edu</p>
+          </div>
+          <a href="javascript:void(0)" onclick="navigateTo('view-profile'); closeUserDropdown();" class="flex items-center gap-2.5 px-4 py-2 text-xs font-medium text-slate-700 hover:bg-brand-50 hover:text-brand-600 transition">
+            <i class="fa-regular fa-user text-slate-400"></i> My Profile
+          </a>
+          <a href="javascript:void(0)" onclick="resetSampleData(); closeUserDropdown();" class="flex items-center gap-2.5 px-4 py-2 text-xs font-medium text-amber-700 hover:bg-amber-50 transition">
+            <i class="fa-solid fa-rotate text-amber-500"></i> Reset Demo Data
+          </a>
+          <div class="border-t border-slate-100 my-1"></div>
+          <a href="javascript:void(0)" onclick="handleLogout(); closeUserDropdown();" class="flex items-center gap-2.5 px-4 py-2 text-xs font-medium text-rose-600 hover:bg-rose-50 transition">
+            <i class="fa-solid fa-arrow-right-from-bracket"></i> Sign Out
+          </a>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ==================== MAIN APPLICATION LAYOUT ==================== -->
+  <div class="flex-1 flex max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 gap-6 relative">
+    
+    <!-- LEFT SIDEBAR NAVIGATION -->
+    <aside id="mainSidebar" class="w-64 flex-shrink-0 hidden md:block transition-all">
+      <div class="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-sm sticky top-24 space-y-6">
+        
+        <!-- Active User Profile Card in Sidebar -->
+        <div class="p-3 bg-gradient-to-br from-slate-50 to-brand-50/40 rounded-xl border border-brand-100/50 flex items-center gap-3">
+          <img id="sideUserAvatar" src="" alt="Avatar" class="w-11 h-11 rounded-xl object-cover shadow-sm border border-white">
+          <div class="overflow-hidden">
+            <h4 id="sideUserName" class="text-sm font-bold text-slate-800 truncate">Dr. Sarah Connor</h4>
+            <span id="sideUserRole" class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-brand-100 text-brand-800 uppercase tracking-wider">Faculty Portal</span>
+          </div>
+        </div>
+
+        <!-- Faculty Nav Links -->
+        <div id="facultyNavSection" class="space-y-1">
+          <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider px-3 mb-2">Faculty Management</p>
+          <button onclick="navigateTo('view-faculty-dashboard')" class="nav-link w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold text-slate-600 hover:text-brand-600 hover:bg-brand-50/70 transition" data-view="view-faculty-dashboard">
+            <i class="fa-solid fa-chart-pie w-5 text-center text-slate-400"></i> Overview
+          </button>
+          <button onclick="navigateTo('view-faculty-courses')" class="nav-link w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold text-slate-600 hover:text-brand-600 hover:bg-brand-50/70 transition" data-view="view-faculty-courses">
+            <i class="fa-solid fa-book-bookmark w-5 text-center text-slate-400"></i> Manage Courses
+          </button>
+          <button onclick="navigateTo('view-faculty-materials')" class="nav-link w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold text-slate-600 hover:text-brand-600 hover:bg-brand-50/70 transition" data-view="view-faculty-materials">
+            <i class="fa-solid fa-folder-tree w-5 text-center text-slate-400"></i> Unit Materials
+          </button>
+          <button onclick="navigateTo('view-faculty-quizzes')" class="nav-link w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold text-slate-600 hover:text-brand-600 hover:bg-brand-50/70 transition" data-view="view-faculty-quizzes">
+            <i class="fa-solid fa-stopwatch-20 w-5 text-center text-slate-400"></i> Quizzes & Questions
+          </button>
+          <button onclick="navigateTo('view-faculty-scores')" class="nav-link w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold text-slate-600 hover:text-brand-600 hover:bg-brand-50/70 transition" data-view="view-faculty-scores">
+            <i class="fa-solid fa-square-poll-vertical w-5 text-center text-slate-400"></i> Student Scores & Export
+          </button>
+        </div>
+
+        <!-- Student Nav Links -->
+        <div id="studentNavSection" class="space-y-1">
+          <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider px-3 mb-2">Student Learning</p>
+          <button onclick="navigateTo('view-student-catalog')" class="nav-link w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold text-slate-600 hover:text-brand-600 hover:bg-brand-50/70 transition" data-view="view-student-catalog">
+            <i class="fa-solid fa-compass w-5 text-center text-slate-400"></i> Course Catalog
+          </button>
+          <button onclick="navigateTo('view-student-enrolled')" class="nav-link w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold text-slate-600 hover:text-brand-600 hover:bg-brand-50/70 transition" data-view="view-student-enrolled">
+            <i class="fa-solid fa-graduation-cap w-5 text-center text-slate-400"></i> My Enrolled Courses
+          </button>
+          <button onclick="navigateTo('view-student-progress')" class="nav-link w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold text-slate-600 hover:text-brand-600 hover:bg-brand-50/70 transition" data-view="view-student-progress">
+            <i class="fa-solid fa-chart-line w-5 text-center text-slate-400"></i> My Progress & Results
+          </button>
+        </div>
+
+        <!-- Common Links -->
+        <div class="pt-4 border-t border-slate-100 space-y-1">
+          <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider px-3 mb-2">Account</p>
+          <button onclick="navigateTo('view-profile')" class="nav-link w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold text-slate-600 hover:text-brand-600 hover:bg-brand-50/70 transition" data-view="view-profile">
+            <i class="fa-solid fa-id-card w-5 text-center text-slate-400"></i> My Profile
+          </button>
+          <button onclick="openAuthModal()" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold text-slate-500 hover:text-brand-600 hover:bg-slate-50 transition">
+            <i class="fa-solid fa-arrows-rotate w-5 text-center text-slate-400"></i> Switch / Login Account
+          </button>
+        </div>
+
+        <!-- Quick Help / Status Box -->
+        <div class="p-3 bg-brand-50/60 rounded-xl border border-brand-100 text-xs text-brand-900 space-y-1.5">
+          <div class="font-bold flex items-center gap-1.5 text-brand-700">
+            <i class="fa-regular fa-circle-question"></i> System Status
+          </div>
+          <p class="text-[11px] text-brand-800 leading-relaxed">Timed engine active. Immediate evaluation & auto-submit enabled on countdown expiration.</p>
+        </div>
+
+      </div>
+    </aside>
+
+    <!-- MAIN VIEW CONTAINER -->
+    <main class="flex-1 min-w-0">
+
+      <!-- ============================================================== -->
+      <!-- VIEW: FACULTY DASHBOARD OVERVIEW                               -->
+      <!-- ============================================================== -->
+      <section id="view-faculty-dashboard" class="app-view space-y-6">
+        <!-- Welcome Hero Banner -->
+        <div class="relative overflow-hidden rounded-3xl bg-gradient-to-r from-brand-700 via-indigo-700 to-indigo-900 text-white p-6 sm:p-8 shadow-xl">
+          <div class="absolute -right-10 -bottom-10 opacity-15 text-[180px] pointer-events-none">
+            <i class="fa-solid fa-chalkboard-user"></i>
+          </div>
+          <div class="relative z-10 max-w-2xl">
+            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 backdrop-blur-md text-xs font-semibold text-brand-100 mb-3 border border-white/20">
+              <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span> Faculty Administration Active
+            </div>
+            <h1 class="font-display text-2xl sm:text-3xl font-bold tracking-tight mb-2">Welcome back, <span id="dashFacultyName">Dr. Sarah Connor</span>!</h1>
+            <p class="text-sm text-indigo-100 leading-relaxed mb-6">Manage institutional course materials, author timed evaluation quizzes, view real-time student submissions, and export grade sheets effortlessly.</p>
+            <div class="flex flex-wrap gap-3">
+              <button onclick="openAddCourseModal()" class="px-4 py-2.5 rounded-xl bg-white text-brand-800 font-bold text-xs hover:bg-brand-50 transition shadow-md flex items-center gap-2">
+                <i class="fa-solid fa-plus"></i> Create New Course
+              </button>
+              <button onclick="openCreateQuizModal()" class="px-4 py-2.5 rounded-xl bg-indigo-500/40 hover:bg-indigo-500/60 border border-white/30 text-white font-bold text-xs transition flex items-center gap-2">
+                <i class="fa-solid fa-stopwatch"></i> Author Timed Quiz
+              </button>
+              <button onclick="navigateTo('view-faculty-scores')" class="px-4 py-2.5 rounded-xl bg-indigo-500/40 hover:bg-indigo-500/60 border border-white/30 text-white font-bold text-xs transition flex items-center gap-2">
+                <i class="fa-solid fa-file-csv"></i> View & Export Grades
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Metrics Overview Cards -->
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs flex items-center gap-4">
+            <div class="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center text-xl font-bold">
+              <i class="fa-solid fa-book-open"></i>
+            </div>
+            <div>
+              <p class="text-xs font-semibold text-slate-400">Total Courses</p>
+              <h3 id="statTotalCourses" class="text-2xl font-display font-bold text-slate-800">0</h3>
+            </div>
+          </div>
+
+          <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs flex items-center gap-4">
+            <div class="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-xl font-bold">
+              <i class="fa-solid fa-users"></i>
+            </div>
+            <div>
+              <p class="text-xs font-semibold text-slate-400">Student Enrollments</p>
+              <h3 id="statTotalEnrollments" class="text-2xl font-display font-bold text-slate-800">0</h3>
+            </div>
+          </div>
+
+          <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs flex items-center gap-4">
+            <div class="w-12 h-12 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center text-xl font-bold">
+              <i class="fa-solid fa-stopwatch-20"></i>
+            </div>
+            <div>
+              <p class="text-xs font-semibold text-slate-400">Active Quizzes</p>
+              <h3 id="statTotalQuizzes" class="text-2xl font-display font-bold text-slate-800">0</h3>
+            </div>
+          </div>
+
+          <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs flex items-center gap-4">
+            <div class="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center text-xl font-bold">
+              <i class="fa-solid fa-square-check"></i>
+            </div>
+            <div>
+              <p class="text-xs font-semibold text-slate-400">Evaluated Attempts</p>
+              <h3 id="statTotalSubmissions" class="text-2xl font-display font-bold text-slate-800">0</h3>
+            </div>
+          </div>
+        </div>
+
+        <!-- Quick Course Management Snippet & Recent Submissions -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <!-- Courses Quick List -->
+          <div class="lg:col-span-2 bg-white rounded-2xl border border-slate-200/80 p-6 shadow-xs space-y-4">
+            <div class="flex items-center justify-between">
+              <div>
+                <h3 class="font-display font-bold text-base text-slate-900">Your Active Courses</h3>
+                <p class="text-xs text-slate-500">Quickly jump into unit material curation or quiz management</p>
+              </div>
+              <button onclick="navigateTo('view-faculty-courses')" class="text-xs font-bold text-brand-600 hover:text-brand-800 flex items-center gap-1">
+                View All <i class="fa-solid fa-arrow-right"></i>
+              </button>
+            </div>
+            <div id="dashCoursesContainer" class="space-y-3">
+              <!-- Dynamically Populated -->
+            </div>
+          </div>
+
+          <!-- Recent Quiz Submissions -->
+          <div class="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-xs space-y-4">
+            <div class="flex items-center justify-between">
+              <h3 class="font-display font-bold text-base text-slate-900">Recent Quiz Activity</h3>
+              <button onclick="navigateTo('view-faculty-scores')" class="text-xs font-bold text-brand-600 hover:text-brand-800">
+                All Scores
+              </button>
+            </div>
+            <div id="dashRecentSubmissions" class="space-y-3 text-xs">
+              <!-- Dynamically Populated -->
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================================== -->
+      <!-- VIEW: FACULTY COURSE MANAGEMENT (ADD / UPDATE / DELETE)        -->
+      <!-- ============================================================== -->
+      <section id="view-faculty-courses" class="app-view hidden space-y-6">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-200/80 shadow-xs">
+          <div>
+            <h2 class="font-display font-bold text-xl text-slate-900">Course Offerings & Curriculum</h2>
+            <p class="text-xs text-slate-500">Add new courses, configure descriptions, edit details, or remove inactive programs.</p>
+          </div>
+          <button onclick="openAddCourseModal()" class="px-4 py-2.5 rounded-xl bg-brand-600 text-white font-bold text-xs hover:bg-brand-700 transition shadow-sm flex items-center justify-center gap-2">
+            <i class="fa-solid fa-plus"></i> Add New Course
+          </button>
+        </div>
+
+        <!-- Course Cards Grid -->
+        <div id="facultyCoursesGrid" class="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <!-- Dynamically populated course cards with Edit & Delete actions -->
+        </div>
+      </section>
+
+      <!-- ============================================================== -->
+      <!-- VIEW: FACULTY STUDY MATERIAL MANAGEMENT (UNIT-WISE)            -->
+      <!-- ============================================================== -->
+      <section id="view-faculty-materials" class="app-view hidden space-y-6">
+        <div class="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-xs space-y-4">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <h2 class="font-display font-bold text-xl text-slate-900">Unit-wise Study Material Manager</h2>
+              <p class="text-xs text-slate-500">Upload study materials (PDF documents & video lectures) segregated by curriculum units.</p>
+            </div>
+            <!-- Course Selector -->
+            <div class="flex items-center gap-2">
+              <label for="materialCourseSelect" class="text-xs font-bold text-slate-600">Course:</label>
+              <select id="materialCourseSelect" onchange="renderUnitMaterialsForSelectedCourse()" class="bg-slate-50 border border-slate-300 text-slate-800 text-xs rounded-xl focus:ring-brand-500 focus:border-brand-500 block p-2 font-medium">
+                <!-- Dynamically populated -->
+              </select>
+            </div>
+          </div>
+
+          <!-- Unit Action Bar -->
+          <div class="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-slate-100">
+            <div class="text-xs text-slate-500">
+              Managing curriculum units for: <span id="currentManagingCourseTitle" class="font-bold text-slate-800">CS301</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <button onclick="openAddUnitModal()" class="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition flex items-center gap-1.5">
+                <i class="fa-solid fa-folder-plus text-brand-600"></i> Add New Unit
+              </button>
+              <button onclick="openAddMaterialModal()" class="px-3.5 py-2 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-bold text-xs transition flex items-center gap-1.5 shadow-sm">
+                <i class="fa-solid fa-cloud-arrow-up"></i> Upload Material (PDF / Video)
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Units and Materials List -->
+        <div id="unitMaterialsContainer" class="space-y-5">
+          <!-- Dynamically populated units accordion/cards -->
+        </div>
+      </section>
+
+      <!-- ============================================================== -->
+      <!-- VIEW: FACULTY QUIZ CREATION & MANAGEMENT                       -->
+      <!-- ============================================================== -->
+      <section id="view-faculty-quizzes" class="app-view hidden space-y-6">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-200/80 shadow-xs">
+          <div>
+            <h2 class="font-display font-bold text-xl text-slate-900">Timed Online Quizzes</h2>
+            <p class="text-xs text-slate-500">Create timed evaluations with automatic scoring, multiple-choice questions, and passing thresholds.</p>
+          </div>
+          <button onclick="openCreateQuizModal()" class="px-4 py-2.5 rounded-xl bg-brand-600 text-white font-bold text-xs hover:bg-brand-700 transition shadow-sm flex items-center justify-center gap-2">
+            <i class="fa-solid fa-stopwatch-20"></i> Create New Quiz
+          </button>
+        </div>
+
+        <!-- Quizzes Listing -->
+        <div id="facultyQuizzesList" class="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <!-- Dynamically populated quizzes -->
+        </div>
+      </section>
+
+      <!-- ============================================================== -->
+      <!-- VIEW: FACULTY STUDENT SCORES & CSV EXPORT                      -->
+      <!-- ============================================================== -->
+      <section id="view-faculty-scores" class="app-view hidden space-y-6">
+        <div class="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-xs space-y-4">
+          <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+              <h2 class="font-display font-bold text-xl text-slate-900">Student Scores & Performance Analytics</h2>
+              <p class="text-xs text-slate-500">Track real-time evaluation scores, auto-submission indicators, and export official grade sheets.</p>
+            </div>
+            
+            <!-- Export Buttons -->
+            <div class="flex items-center gap-2">
+              <button onclick="exportScoresToCSV()" class="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition shadow-sm flex items-center gap-2">
+                <i class="fa-solid fa-file-csv text-base"></i> Export Results (CSV)
+              </button>
+              <button onclick="window.print()" class="px-3.5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition flex items-center gap-1.5">
+                <i class="fa-solid fa-print"></i> Print
+              </button>
+            </div>
+          </div>
+
+          <!-- Filters Row -->
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-4 border-t border-slate-100">
+            <div>
+              <label for="filterScoreCourse" class="block text-[11px] font-bold text-slate-500 uppercase mb-1">Filter Course</label>
+              <select id="filterScoreCourse" onchange="renderFacultyScoresTable()" class="w-full bg-slate-50 border border-slate-300 text-slate-800 text-xs rounded-xl p-2 font-medium">
+                <option value="ALL">All Courses</option>
+              </select>
+            </div>
+            <div>
+              <label for="filterScoreQuiz" class="block text-[11px] font-bold text-slate-500 uppercase mb-1">Filter Quiz</label>
+              <select id="filterScoreQuiz" onchange="renderFacultyScoresTable()" class="w-full bg-slate-50 border border-slate-300 text-slate-800 text-xs rounded-xl p-2 font-medium">
+                <option value="ALL">All Quizzes</option>
+              </select>
+            </div>
+            <div>
+              <label for="searchScoreStudent" class="block text-[11px] font-bold text-slate-500 uppercase mb-1">Search Student</label>
+              <div class="relative">
+                <input type="text" id="searchScoreStudent" oninput="renderFacultyScoresTable()" placeholder="Search by name or email..." class="w-full bg-slate-50 border border-slate-300 text-slate-800 text-xs rounded-xl pl-8 p-2 font-medium">
+                <i class="fa-solid fa-magnifying-glass absolute left-2.5 top-2.5 text-slate-400 text-xs"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Scores Data Table -->
+        <div class="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse text-xs">
+              <thead>
+                <tr class="bg-slate-50 text-slate-500 uppercase text-[10px] font-bold border-b border-slate-200">
+                  <th class="py-3 px-4">Student</th>
+                  <th class="py-3 px-4">Course</th>
+                  <th class="py-3 px-4">Quiz Title</th>
+                  <th class="py-3 px-4 text-center">Score / Total</th>
+                  <th class="py-3 px-4 text-center">Percentage</th>
+                  <th class="py-3 px-4 text-center">Status</th>
+                  <th class="py-3 px-4 text-center">Submission Mode</th>
+                  <th class="py-3 px-4 text-right">Date & Time</th>
+                </tr>
+              </thead>
+              <tbody id="scoresTableBody" class="divide-y divide-slate-100 text-slate-700">
+                <!-- Dynamically populated rows -->
+              </tbody>
+            </table>
+          </div>
+          <!-- Empty State Container -->
+          <div id="scoresEmptyState" class="hidden py-12 text-center text-slate-400">
+            <i class="fa-solid fa-inbox text-4xl mb-3 text-slate-300"></i>
+            <p class="text-sm font-semibold text-slate-600">No student submissions found matching the criteria</p>
+            <p class="text-xs text-slate-400 mt-1">When students complete or timeout in quizzes, scores will automatically record here.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================================== -->
+      <!-- VIEW: STUDENT COURSE CATALOG (BROWSE & ENROL)                  -->
+      <!-- ============================================================== -->
+      <section id="view-student-catalog" class="app-view hidden space-y-6">
+        <!-- Student Hero Banner -->
+        <div class="relative overflow-hidden rounded-3xl bg-gradient-to-r from-indigo-700 via-brand-600 to-indigo-800 text-white p-6 sm:p-8 shadow-xl">
+          <div class="relative z-10 max-w-2xl">
+            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 backdrop-blur-md text-xs font-semibold text-brand-100 mb-2 border border-white/20">
+              <i class="fa-solid fa-graduation-cap"></i> Student Learning Portal
+            </span>
+            <h1 class="font-display text-2xl sm:text-3xl font-bold tracking-tight mb-2">Explore & Master New Courses</h1>
+            <p class="text-sm text-indigo-100 leading-relaxed">Enroll in university-accredited subjects, review unit-wise PDF guides & video lectures, and test your knowledge with self-evaluating timed assessments.</p>
+          </div>
+        </div>
+
+        <!-- Filter Bar -->
+        <div class="flex flex-col sm:flex-row items-center justify-between gap-4 bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs">
+          <div class="flex items-center gap-2 w-full sm:w-auto">
+            <span class="text-xs font-bold text-slate-500">Category:</span>
+            <select id="catalogCategoryFilter" onchange="renderStudentCatalog()" class="bg-slate-50 border border-slate-300 text-slate-800 text-xs rounded-xl p-2 font-medium">
+              <option value="ALL">All Categories</option>
+              <option value="Computer Science">Computer Science</option>
+              <option value="Artificial Intelligence">Artificial Intelligence</option>
+              <option value="Information Security">Information Security</option>
+            </select>
+          </div>
+          <div class="relative w-full sm:w-72">
+            <input type="text" id="catalogSearchInput" oninput="renderStudentCatalog()" placeholder="Search courses or topics..." class="w-full bg-slate-50 border border-slate-300 text-slate-800 text-xs rounded-xl pl-8 p-2 font-medium">
+            <i class="fa-solid fa-magnifying-glass absolute left-2.5 top-2.5 text-slate-400 text-xs"></i>
+          </div>
+        </div>
+
+        <!-- Student Courses Catalog Grid -->
+        <div id="studentCatalogGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          <!-- Dynamically populated course cards with 'Enrol' or 'Enrolled' status -->
+        </div>
+      </section>
+
+      <!-- ============================================================== -->
+      <!-- VIEW: STUDENT ENROLLED COURSES                                 -->
+      <!-- ============================================================== -->
+      <section id="view-student-enrolled" class="app-view hidden space-y-6">
+        <div class="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h2 class="font-display font-bold text-xl text-slate-900">My Enrolled Courses</h2>
+            <p class="text-xs text-slate-500">Access your active course materials, video lessons, and curriculum quizzes.</p>
+          </div>
+          <button onclick="navigateTo('view-student-catalog')" class="px-4 py-2 rounded-xl bg-brand-50 text-brand-600 font-bold text-xs hover:bg-brand-100 transition flex items-center gap-2">
+            <i class="fa-solid fa-plus"></i> Browse More Courses
+          </button>
+        </div>
+
+        <div id="studentEnrolledGrid" class="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <!-- Dynamically populated enrolled courses -->
+        </div>
+      </section>
+
+      <!-- ============================================================== -->
+      <!-- VIEW: STUDENT COURSE STUDY MATERIALS & QUIZ ACCESS             -->
+      <!-- ============================================================== -->
+      <section id="view-student-course-materials" class="app-view hidden space-y-6">
+        <!-- Course Header Info -->
+        <div id="studentCourseHeaderCard" class="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm relative overflow-hidden">
+          <!-- Populated dynamically -->
+        </div>
+
+        <!-- Tabs for Material vs Quizzes -->
+        <div class="flex border-b border-slate-200 text-sm font-bold gap-6">
+          <button onclick="switchStudentCourseTab('materials')" id="tabBtnMaterials" class="pb-3 text-brand-600 border-b-2 border-brand-600 flex items-center gap-2">
+            <i class="fa-solid fa-book-open"></i> Unit Study Materials (PDF & Video)
+          </button>
+          <button onclick="switchStudentCourseTab('quizzes')" id="tabBtnQuizzes" class="pb-3 text-slate-400 hover:text-slate-700 flex items-center gap-2 border-b-2 border-transparent">
+            <i class="fa-solid fa-stopwatch"></i> Timed Quizzes & Assessments
+          </button>
+        </div>
+
+        <!-- Material Container -->
+        <div id="studentStudyMaterialsTab" class="space-y-4">
+          <!-- Dynamically rendered unit-wise materials with preview and download -->
+        </div>
+
+        <!-- Quizzes Container -->
+        <div id="studentQuizzesTab" class="hidden space-y-4">
+          <!-- Dynamically rendered quizzes available for this course -->
+        </div>
+      </section>
+
+      <!-- ============================================================== -->
+      <!-- VIEW: TIMED QUIZ RUNNER (COUNTDOWN TIMER + AUTO-SUBMIT)        -->
+      <!-- ============================================================== -->
+      <section id="view-student-quiz-runner" class="app-view hidden space-y-6">
+        <!-- Floating/Sticky Quiz Engine Header -->
+        <div class="sticky top-20 z-30 bg-white/95 backdrop-blur-md p-4 sm:p-5 rounded-2xl border-2 border-brand-200 shadow-lg">
+          <div class="flex flex-col sm:flex-row items-center justify-between gap-3">
+            <div>
+              <span id="quizRunnerCourseCode" class="px-2 py-0.5 rounded bg-brand-50 text-brand-700 text-[10px] font-extrabold uppercase">CS301</span>
+              <h2 id="quizRunnerTitle" class="font-display font-bold text-base sm:text-lg text-slate-900 leading-snug">Midterm Assessment: Web Architecture</h2>
+            </div>
+
+            <!-- JAVASCRIPT COUNTDOWN TIMER CONTAINER -->
+            <div class="flex items-center gap-3">
+              <div id="quizTimerWrapper" class="flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-900 text-white font-mono font-bold text-lg shadow-md transition-all">
+                <i class="fa-solid fa-stopwatch text-brand-400"></i>
+                <span id="quizTimeRemainingDisplay">03:00</span>
+              </div>
+              <button onclick="confirmSubmitQuiz(false)" class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition shadow-sm flex items-center gap-1.5">
+                <i class="fa-solid fa-paper-plane"></i> Submit Quiz
+              </button>
+            </div>
+          </div>
+
+          <!-- Countdown Progress Bar -->
+          <div class="w-full bg-slate-200 h-2 rounded-full overflow-hidden mt-3">
+            <div id="quizTimerProgressBar" class="h-full bg-brand-600 transition-all duration-1000 ease-linear rounded-full" style="width: 100%;"></div>
+          </div>
+        </div>
+
+        <!-- Quiz Main Body: Question Display & Question Palette Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          
+          <!-- Question Canvas (Left 3 cols) -->
+          <div class="lg:col-span-3 bg-white p-6 sm:p-8 rounded-3xl border border-slate-200/90 shadow-sm space-y-6">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-4">
+              <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                Question <span id="currentQuestionNum" class="text-brand-600 text-sm font-extrabold">1</span> of <span id="totalQuestionsCount">5</span>
+              </span>
+              <div class="flex items-center gap-2">
+                <button onclick="toggleFlagCurrentQuestion()" id="flagQuestionBtn" class="px-3 py-1 rounded-lg text-xs font-semibold text-slate-500 hover:bg-slate-100 border border-slate-200 transition flex items-center gap-1.5">
+                  <i class="fa-regular fa-flag"></i> Flag for Review
+                </button>
+              </div>
+            </div>
+
+            <!-- Question Statement -->
+            <div id="quizQuestionText" class="text-base sm:text-lg font-bold text-slate-800 leading-relaxed">
+              Loading question...
+            </div>
+
+            <!-- Multiple Choice Options -->
+            <div id="quizOptionsContainer" class="space-y-3">
+              <!-- Dynamically populated interactive options -->
+            </div>
+
+            <!-- Bottom Question Controls -->
+            <div class="flex items-center justify-between pt-6 border-t border-slate-100">
+              <button onclick="prevQuestion()" id="prevQuestionBtn" class="px-4 py-2 rounded-xl border border-slate-300 text-slate-700 hover:bg-slate-100 font-bold text-xs transition flex items-center gap-1.5 disabled:opacity-40">
+                <i class="fa-solid fa-arrow-left"></i> Previous
+              </button>
+              <div class="text-[11px] text-slate-400 italic">
+                Answers are auto-saved in real time
+              </div>
+              <button onclick="nextQuestion()" id="nextQuestionBtn" class="px-4 py-2 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-bold text-xs transition flex items-center gap-1.5">
+                Next <i class="fa-solid fa-arrow-right"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- Question Palette / Sidebar (Right col) -->
+          <div class="bg-white p-5 rounded-3xl border border-slate-200/90 shadow-sm space-y-4">
+            <h4 class="font-display font-bold text-sm text-slate-800 flex items-center gap-2">
+              <i class="fa-solid fa-grip text-brand-600"></i> Question Palette
+            </h4>
+            
+            <!-- Quick jump grid -->
+            <div id="questionPaletteGrid" class="grid grid-cols-4 sm:grid-cols-5 lg:grid-cols-4 gap-2">
+              <!-- Dynamically populated buttons -->
+            </div>
+
+            <!-- Legend -->
+            <div class="pt-4 border-t border-slate-100 space-y-1.5 text-[11px] text-slate-500">
+              <div class="flex items-center gap-2">
+                <span class="w-3.5 h-3.5 rounded bg-emerald-500 inline-block"></span> Answered
+              </div>
+              <div class="flex items-center gap-2">
+                <span class="w-3.5 h-3.5 rounded bg-amber-400 inline-block"></span> Flagged for review
+              </div>
+              <div class="flex items-center gap-2">
+                <span class="w-3.5 h-3.5 rounded bg-slate-100 border border-slate-300 inline-block"></span> Unanswered
+              </div>
+              <div class="flex items-center gap-2">
+                <span class="w-3.5 h-3.5 rounded ring-2 ring-brand-600 bg-brand-50 inline-block"></span> Current
+              </div>
+            </div>
+
+            <!-- Auto-Submit Notice -->
+            <div class="p-3 rounded-xl bg-rose-50 border border-rose-100 text-[11px] text-rose-800 leading-snug">
+              <i class="fa-solid fa-triangle-exclamation text-rose-500 mr-1"></i>
+              <strong>Notice:</strong> When the countdown reaches 00:00, your test will be auto-submitted immediately.
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- ============================================================== -->
+      <!-- VIEW: STUDENT QUIZ SCORE & ANSWER REVIEW (INSTANT EVALUATION)  -->
+      <!-- ============================================================== -->
+      <section id="view-student-quiz-result" class="app-view hidden space-y-6">
+        <!-- Results Hero Banner -->
+        <div id="resultBannerCard" class="p-6 sm:p-8 rounded-3xl text-white shadow-xl text-center space-y-3 transition-all">
+          <div id="resultStatusIcon" class="w-16 h-16 rounded-2xl mx-auto flex items-center justify-center text-3xl font-bold bg-white/20 backdrop-blur-md mb-2">
+            <i class="fa-solid fa-trophy"></i>
+          </div>
+          <span id="resultAutoSubmittedBadge" class="hidden inline-block px-3 py-1 rounded-full bg-rose-500 text-white text-[10px] font-extrabold uppercase tracking-wider">
+            Auto-Submitted On Timer Expiry
+          </span>
+          <h2 id="resultStatusHeading" class="font-display font-extrabold text-2xl sm:text-3xl">Outstanding Performance!</h2>
+          <p id="resultStatusSubheading" class="text-sm max-w-xl mx-auto opacity-90">Your online quiz has been evaluated automatically. Review your final score and detailed question-by-question rationales below.</p>
+        </div>
+
+        <!-- Score Metrics Grid -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs text-center">
+            <p class="text-xs font-semibold text-slate-400">Total Score</p>
+            <h3 id="resScoreValue" class="text-2xl font-display font-extrabold text-slate-800">4 / 5</h3>
+          </div>
+          <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs text-center">
+            <p class="text-xs font-semibold text-slate-400">Percentage</p>
+            <h3 id="resPercentValue" class="text-2xl font-display font-extrabold text-brand-600">80%</h3>
+          </div>
+          <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs text-center">
+            <p class="text-xs font-semibold text-slate-400">Time Taken</p>
+            <h3 id="resTimeTakenValue" class="text-2xl font-display font-extrabold text-slate-800">01:45</h3>
+          </div>
+          <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs text-center">
+            <p class="text-xs font-semibold text-slate-400">Evaluation Outcome</p>
+            <h3 id="resOutcomeValue" class="text-2xl font-display font-extrabold text-emerald-600">PASSED</h3>
+          </div>
+        </div>
+
+        <!-- Question by Question Breakdown -->
+        <div class="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200/90 shadow-sm space-y-6">
+          <div class="flex items-center justify-between border-b border-slate-100 pb-4">
+            <div>
+              <h3 class="font-display font-bold text-lg text-slate-900">Detailed Answer Review & Solutions</h3>
+              <p class="text-xs text-slate-500">Compare your selected responses against the officially verified answer keys.</p>
+            </div>
+            <div class="flex items-center gap-2">
+              <button onclick="navigateTo('view-student-enrolled')" class="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition">
+                Back to Courses
+              </button>
+              <button onclick="navigateTo('view-student-progress')" class="px-4 py-2 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-bold text-xs transition">
+                View My History
+              </button>
+            </div>
+          </div>
+
+          <!-- Breakdown list -->
+          <div id="resultQuestionsBreakdown" class="space-y-6">
+            <!-- Dynamically populated with green/red badges and explanations -->
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================================== -->
+      <!-- VIEW: STUDENT PROGRESS & QUIZ HISTORY                          -->
+      <!-- ============================================================== -->
+      <section id="view-student-progress" class="app-view hidden space-y-6">
+        <div class="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h2 class="font-display font-bold text-xl text-slate-900">My Learning Progress & Quiz History</h2>
+            <p class="text-xs text-slate-500">Track your completed evaluations, scores, and past answer solutions.</p>
+          </div>
+        </div>
+
+        <!-- Student Progress Stats -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs">
+            <span class="text-xs font-bold text-slate-400">Courses Enrolled</span>
+            <h3 id="progCoursesEnrolledCount" class="text-2xl font-display font-bold text-slate-900 mt-1">0</h3>
+          </div>
+          <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs">
+            <span class="text-xs font-bold text-slate-400">Total Quizzes Attempted</span>
+            <h3 id="progQuizzesAttemptedCount" class="text-2xl font-display font-bold text-slate-900 mt-1">0</h3>
+          </div>
+          <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs">
+            <span class="text-xs font-bold text-slate-400">Average Performance</span>
+            <h3 id="progAvgScorePercent" class="text-2xl font-display font-bold text-emerald-600 mt-1">0%</h3>
+          </div>
+        </div>
+
+        <!-- Past Attempts Table -->
+        <div class="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
+          <div class="p-4 border-b border-slate-100 flex items-center justify-between">
+            <h3 class="font-display font-bold text-sm text-slate-900">Evaluation History</h3>
+            <span class="text-[11px] text-slate-400">Recorded in institutional database</span>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse text-xs">
+              <thead>
+                <tr class="bg-slate-50 text-slate-500 uppercase text-[10px] font-bold border-b border-slate-200">
+                  <th class="py-3 px-4">Course</th>
+                  <th class="py-3 px-4">Quiz Title</th>
+                  <th class="py-3 px-4 text-center">Score</th>
+                  <th class="py-3 px-4 text-center">Percentage</th>
+                  <th class="py-3 px-4 text-center">Result</th>
+                  <th class="py-3 px-4 text-center">Mode</th>
+                  <th class="py-3 px-4 text-right">Attempt Date</th>
+                </tr>
+              </thead>
+              <tbody id="studentHistoryTableBody" class="divide-y divide-slate-100 text-slate-700">
+                <!-- Dynamically populated -->
+              </tbody>
+            </table>
+          </div>
+          <div id="studentHistoryEmpty" class="hidden py-12 text-center text-slate-400">
+            <i class="fa-solid fa-clock-rotate-left text-4xl mb-2 text-slate-300"></i>
+            <p class="text-sm font-semibold text-slate-600">No past quiz attempts yet</p>
+            <p class="text-xs text-slate-400 mt-1">Enroll in a course and take a timed quiz to view your progress here.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================================== -->
+      <!-- VIEW: USER PROFILE (MY PROFILE)                                -->
+      <!-- ============================================================== -->
+      <section id="view-profile" class="app-view hidden space-y-6">
+        <div class="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200/80 shadow-sm max-w-2xl mx-auto space-y-6">
+          <div class="flex items-center gap-4 border-b border-slate-100 pb-6">
+            <img id="profileCardAvatar" src="" alt="Avatar" class="w-20 h-20 rounded-2xl object-cover border-2 border-brand-500 shadow-md">
+            <div>
+              <h2 id="profileCardName" class="font-display font-bold text-xl text-slate-900">Dr. Sarah Connor</h2>
+              <span id="profileCardRoleBadge" class="inline-block px-2.5 py-0.5 rounded text-xs font-bold bg-brand-100 text-brand-800 uppercase tracking-wide mt-1">Faculty</span>
+              <p id="profileCardDept" class="text-xs text-slate-500 mt-0.5">Department of Computer Science & AI</p>
+            </div>
+          </div>
+
+          <form id="profileEditForm" onsubmit="handleSaveProfile(event)" class="space-y-4">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">Full Name</label>
+                <input type="text" id="profInputName" required class="w-full bg-slate-50 border border-slate-300 text-slate-800 text-xs rounded-xl p-2.5 font-medium">
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">Email Address</label>
+                <input type="email" id="profInputEmail" required class="w-full bg-slate-50 border border-slate-300 text-slate-800 text-xs rounded-xl p-2.5 font-medium">
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">Department / Specialization</label>
+                <input type="text" id="profInputDept" class="w-full bg-slate-50 border border-slate-300 text-slate-800 text-xs rounded-xl p-2.5 font-medium">
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">Identification Number</label>
+                <input type="text" id="profInputIdNum" class="w-full bg-slate-50 border border-slate-300 text-slate-800 text-xs rounded-xl p-2.5 font-medium">
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">Profile Photo (URL)</label>
+              <input type="url" id="profInputAvatar" class="w-full bg-slate-50 border border-slate-300 text-slate-800 text-xs rounded-xl p-2.5 font-medium">
+            </div>
+
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">Short Bio</label>
+              <textarea id="profInputBio" rows="3" class="w-full bg-slate-50 border border-slate-300 text-slate-800 text-xs rounded-xl p-2.5 font-medium"></textarea>
+            </div>
+
+            <div class="pt-4 border-t border-slate-100 flex items-center justify-end gap-3">
+              <button type="button" onclick="navigateToHome()" class="px-4 py-2 rounded-xl bg-slate-100 text-slate-700 font-bold text-xs hover:bg-slate-200 transition">
+                Cancel
+              </button>
+              <button type="submit" class="px-5 py-2 rounded-xl bg-brand-600 text-white font-bold text-xs hover:bg-brand-700 transition shadow-sm">
+                Save Profile Changes
+              </button>
+            </div>
+          </form>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- ==================== MODALS & POPUPS ==================== -->
+
+  <!-- MODAL: ADD / EDIT COURSE -->
+  <div id="modalAddCourse" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-100 space-y-4">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+        <h3 id="modalCourseTitle" class="font-display font-bold text-base text-slate-900">Add New Academic Course</h3>
+        <button onclick="closeModal('modalAddCourse')" class="text-slate-400 hover:text-slate-600 text-lg">&times;</button>
+      </div>
+      <form id="formAddCourse" onsubmit="handleSaveCourse(event)" class="space-y-3.5 text-xs">
+        <input type="hidden" id="editCourseId" value="">
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="font-bold text-slate-700 block mb-1">Course Code</label>
+            <input type="text" id="courseCodeInput" required placeholder="e.g. CS402" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5">
+          </div>
+          <div>
+            <label class="font-bold text-slate-700 block mb-1">Category</label>
+            <select id="courseCategoryInput" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 font-medium">
+              <option value="Computer Science">Computer Science</option>
+              <option value="Artificial Intelligence">Artificial Intelligence</option>
+              <option value="Information Security">Information Security</option>
+              <option value="Data Engineering">Data Engineering</option>
+            </select>
+          </div>
+        </div>
+        <div>
+          <label class="font-bold text-slate-700 block mb-1">Course Title</label>
+          <input type="text" id="courseTitleInput" required placeholder="e.g. Distributed Cloud Computing & Microservices" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5">
+        </div>
+        <div>
+          <label class="font-bold text-slate-700 block mb-1">Description</label>
+          <textarea id="courseDescInput" required rows="3" placeholder="Provide syllabus summary and course outcomes..." class="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5"></textarea>
+        </div>
+        <div>
+          <label class="font-bold text-slate-700 block mb-1">Color Theme</label>
+          <select id="courseColorInput" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 font-medium">
+            <option value="from-blue-600 to-indigo-700">Indigo & Blue Gradient</option>
+            <option value="from-emerald-600 to-teal-700">Emerald & Teal Gradient</option>
+            <option value="from-purple-600 to-pink-700">Purple & Pink Gradient</option>
+            <option value="from-amber-600 to-orange-700">Amber & Orange Gradient</option>
+          </select>
+        </div>
+        <div class="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+          <button type="button" onclick="closeModal('modalAddCourse')" class="px-4 py-2 rounded-xl bg-slate-100 font-bold text-slate-700 hover:bg-slate-200">Cancel</button>
+          <button type="submit" class="px-4 py-2 rounded-xl bg-brand-600 font-bold text-white hover:bg-brand-700 shadow-sm">Save Course</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: ADD UNIT -->
+  <div id="modalAddUnit" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-100 space-y-4">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+        <h3 class="font-display font-bold text-base text-slate-900">Add Curriculum Unit</h3>
+        <button onclick="closeModal('modalAddUnit')" class="text-slate-400 hover:text-slate-600 text-lg">&times;</button>
+      </div>
+      <form onsubmit="handleSaveUnit(event)" class="space-y-3.5 text-xs">
+        <div>
+          <label class="font-bold text-slate-700 block mb-1">Target Course</label>
+          <select id="unitCourseSelect" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 font-medium"></select>
+        </div>
+        <div>
+          <label class="font-bold text-slate-700 block mb-1">Unit Title & Number</label>
+          <input type="text" id="unitTitleInput" required placeholder="e.g. Unit 3: Concurrency & Asynchronous Streams" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5">
+        </div>
+        <div class="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+          <button type="button" onclick="closeModal('modalAddUnit')" class="px-4 py-2 rounded-xl bg-slate-100 font-bold text-slate-700 hover:bg-slate-200">Cancel</button>
+          <button type="submit" class="px-4 py-2 rounded-xl bg-brand-600 font-bold text-white hover:bg-brand-700 shadow-sm">Create Unit</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: UPLOAD STUDY MATERIAL (PDF OR VIDEO LINK) UNIT-WISE -->
+  <div id="modalAddMaterial" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-100 space-y-4">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+        <h3 class="font-display font-bold text-base text-slate-900">Upload Study Material (Unit-wise)</h3>
+        <button onclick="closeModal('modalAddMaterial')" class="text-slate-400 hover:text-slate-600 text-lg">&times;</button>
+      </div>
+      <form onsubmit="handleSaveMaterial(event)" class="space-y-3.5 text-xs">
+        <div>
+          <label class="font-bold text-slate-700 block mb-1">Course</label>
+          <select id="matCourseSelect" onchange="populateUnitDropdownForMaterialModal()" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 font-medium"></select>
+        </div>
+        <div>
+          <label class="font-bold text-slate-700 block mb-1">Assign to Unit</label>
+          <select id="matUnitSelect" required class="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 font-medium"></select>
+        </div>
+        <div>
+          <label class="font-bold text-slate-700 block mb-1">Material Type</label>
+          <div class="grid grid-cols-2 gap-3">
+            <label class="flex items-center gap-2 p-3 rounded-xl border border-slate-200 bg-slate-50 cursor-pointer has-[:checked]:border-brand-600 has-[:checked]:bg-brand-50">
+              <input type="radio" name="materialTypeRadio" value="pdf" checked onchange="toggleMaterialTypeInput()" class="text-brand-600">
+              <span class="font-bold text-slate-800 flex items-center gap-1.5"><i class="fa-solid fa-file-pdf text-rose-500"></i> PDF Document</span>
+            </label>
+            <label class="flex items-center gap-2 p-3 rounded-xl border border-slate-200 bg-slate-50 cursor-pointer has-[:checked]:border-brand-600 has-[:checked]:bg-brand-50">
+              <input type="radio" name="materialTypeRadio" value="video" onchange="toggleMaterialTypeInput()" class="text-brand-600">
+              <span class="font-bold text-slate-800 flex items-center gap-1.5"><i class="fa-solid fa-circle-play text-red-500"></i> Video Lecture Link</span>
+            </label>
+          </div>
+        </div>
+        <div>
+          <label class="font-bold text-slate-700 block mb-1">Material Title</label>
+          <input type="text" id="matTitleInput" required placeholder="e.g. Comprehensive Guide to WebSockets & Real-time Protocols" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5">
+        </div>
+        <div id="matUrlContainer">
+          <label id="matUrlLabel" class="font-bold text-slate-700 block mb-1">Document URL / PDF Resource</label>
+          <input type="text" id="matUrlInput" required value="https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5">
+          <p id="matUrlHelp" class="text-[11px] text-slate-400 mt-1">Provide direct PDF link or sample resource</p>
+        </div>
+        <div class="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+          <button type="button" onclick="closeModal('modalAddMaterial')" class="px-4 py-2 rounded-xl bg-slate-100 font-bold text-slate-700 hover:bg-slate-200">Cancel</button>
+          <button type="submit" class="px-4 py-2 rounded-xl bg-brand-600 font-bold text-white hover:bg-brand-700 shadow-sm">Save Material</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: CREATE TIMED QUIZ WITH QUESTIONS & OPTIONS -->
+  <div id="modalCreateQuiz" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-3xl max-w-2xl w-full p-6 shadow-2xl border border-slate-100 space-y-4 max-h-[90vh] flex flex-col">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-3 flex-shrink-0">
+        <div>
+          <h3 class="font-display font-bold text-base text-slate-900">Author Timed Online Quiz</h3>
+          <p class="text-[11px] text-slate-500">Configure questions, options, correct answers, and countdown limit.</p>
+        </div>
+        <button onclick="closeModal('modalCreateQuiz')" class="text-slate-400 hover:text-slate-600 text-lg">&times;</button>
+      </div>
+
+      <div class="flex-1 overflow-y-auto pr-1 space-y-4 text-xs">
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div>
+            <label class="font-bold text-slate-700 block mb-1">Target Course</label>
+            <select id="quizCourseSelect" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 font-medium"></select>
+          </div>
+          <div>
+            <label class="font-bold text-slate-700 block mb-1">Time Limit (Minutes)</label>
+            <input type="number" id="quizDurationInput" min="1" max="180" value="2" required class="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 font-bold text-brand-600">
+            <span class="text-[10px] text-slate-400">Timer will auto-submit when expires</span>
+          </div>
+          <div>
+            <label class="font-bold text-slate-700 block mb-1">Passing Score (%)</label>
+            <input type="number" id="quizPassingScoreInput" min="10" max="100" value="60" required class="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 font-medium">
+          </div>
+        </div>
+
+        <div>
+          <label class="font-bold text-slate-700 block mb-1">Quiz Title</label>
+          <input type="text" id="quizTitleInput" required placeholder="e.g. Assessment: Asynchronous Architecture & Promises" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5">
+        </div>
+
+        <div>
+          <label class="font-bold text-slate-700 block mb-1">Quiz Instructions / Description</label>
+          <textarea id="quizDescInput" rows="2" placeholder="Describe the evaluation scope and guidelines for students..." class="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5"></textarea>
+        </div>
+
+        <!-- Dynamic Questions Section -->
+        <div class="pt-2 border-t border-slate-100">
+          <div class="flex items-center justify-between mb-3">
+            <h4 class="font-display font-bold text-sm text-slate-800">Quiz Questions Builder</h4>
+            <button type="button" onclick="addQuestionFieldToBuilder()" class="px-3 py-1.5 rounded-lg bg-brand-50 text-brand-700 hover:bg-brand-100 font-bold text-xs transition flex items-center gap-1.5">
+              <i class="fa-solid fa-plus"></i> Add Question
+            </button>
+          </div>
+          <div id="quizQuestionsBuilderContainer" class="space-y-4">
+            <!-- Dynamic Question blocks -->
+          </div>
+        </div>
+      </div>
+
+      <div class="flex items-center justify-end gap-2 pt-3 border-t border-slate-100 flex-shrink-0">
+        <button type="button" onclick="closeModal('modalCreateQuiz')" class="px-4 py-2 rounded-xl bg-slate-100 font-bold text-slate-700 hover:bg-slate-200">Cancel</button>
+        <button type="button" onclick="handleSaveCreatedQuiz()" class="px-5 py-2 rounded-xl bg-brand-600 font-bold text-white hover:bg-brand-700 shadow-sm">Publish Quiz</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: STUDY MATERIAL VIEWER (PDF READER & VIDEO STREAM) -->
+  <div id="modalViewMaterial" class="fixed inset-0 z-50 bg-slate-900/75 backdrop-blur-xs flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-3xl max-w-4xl w-full p-6 shadow-2xl border border-slate-100 space-y-4 max-h-[92vh] flex flex-col">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-3 flex-shrink-0">
+        <div class="flex items-center gap-2.5">
+          <div id="viewerIcon" class="w-8 h-8 rounded-lg bg-brand-50 text-brand-600 flex items-center justify-center text-sm font-bold">
+            <i class="fa-solid fa-file-pdf"></i>
+          </div>
+          <div>
+            <h3 id="viewerTitle" class="font-display font-bold text-base text-slate-900 truncate max-w-lg">Material Preview</h3>
+            <p id="viewerSubtitle" class="text-[11px] text-slate-400">Unit Study Resource</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-2">
+          <button id="viewerDownloadBtn" class="px-3 py-1.5 rounded-lg bg-brand-50 hover:bg-brand-100 text-brand-700 font-bold text-xs transition flex items-center gap-1.5">
+            <i class="fa-solid fa-download"></i> Download Material
+          </button>
+          <button onclick="closeModal('modalViewMaterial')" class="text-slate-400 hover:text-slate-600 text-xl font-bold px-2">&times;</button>
+        </div>
+      </div>
+      
+      <div id="viewerContentBox" class="flex-1 bg-slate-100 rounded-2xl overflow-hidden min-h-[400px] flex items-center justify-center border border-slate-200">
+        <!-- Embedded viewer iframe or player -->
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: QUIZ SUBMISSION CONFIRMATION -->
+  <div id="modalConfirmSubmit" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl border border-slate-100 text-center space-y-4">
+      <div class="w-14 h-14 rounded-2xl bg-brand-50 text-brand-600 flex items-center justify-center mx-auto text-2xl font-bold">
+        <i class="fa-solid fa-circle-question"></i>
+      </div>
+      <div>
+        <h3 class="font-display font-bold text-lg text-slate-900">Submit Quiz Now?</h3>
+        <p id="submitConfirmStats" class="text-xs text-slate-500 mt-1">You have answered 4 of 5 questions. Remaining time: 01:24.</p>
+      </div>
+      <div class="flex items-center justify-center gap-2 pt-2">
+        <button onclick="closeModal('modalConfirmSubmit')" class="px-4 py-2 rounded-xl bg-slate-100 font-bold text-slate-700 text-xs hover:bg-slate-200 transition">Return to Test</button>
+        <button onclick="executeQuizSubmission(false)" class="px-5 py-2 rounded-xl bg-emerald-600 font-bold text-white text-xs hover:bg-emerald-700 transition shadow-sm">Yes, Finalize & Submit</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: LOGIN / REGISTER / ROLE SWITCH -->
+  <div id="modalAuth" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-100 space-y-4">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+        <h3 class="font-display font-bold text-base text-slate-900">Institutional Authentication</h3>
+        <button onclick="closeModal('modalAuth')" class="text-slate-400 hover:text-slate-600 text-lg">&times;</button>
+      </div>
+
+      <!-- Auth Tabs -->
+      <div class="flex border-b border-slate-200 text-xs font-bold gap-4">
+        <button onclick="switchAuthTab('login')" id="authTabLogin" class="pb-2 text-brand-600 border-b-2 border-brand-600">Login</button>
+        <button onclick="switchAuthTab('register')" id="authTabRegister" class="pb-2 text-slate-400 hover:text-slate-700 border-b-2 border-transparent">Register Student</button>
+        <button onclick="switchAuthTab('demo')" id="authTabDemo" class="pb-2 text-slate-400 hover:text-slate-700 border-b-2 border-transparent">Quick Switch</button>
+      </div>
+
+      <!-- Login Form -->
+      <form id="authLoginForm" onsubmit="handleAuthLogin(event)" class="space-y-3 text-xs">
+        <div>
+          <label class="font-bold text-slate-700 block mb-1">Email Address</label>
+          <input type="email" id="loginEmail" required placeholder="name@institution.edu" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5">
+        </div>
+        <div>
+          <label class="font-bold text-slate-700 block mb-1">Password</label>
+          <input type="password" id="loginPassword" required placeholder="••••••••" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5">
+        </div>
+        <div>
+          <label class="font-bold text-slate-700 block mb-1">Role</label>
+          <select id="loginRole" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 font-medium">
+            <option value="faculty">Faculty Member</option>
+            <option value="student">Enrolled Student</option>
+          </select>
+        </div>
+        <button type="submit" class="w-full py-2.5 rounded-xl bg-brand-600 font-bold text-white hover:bg-brand-700 transition shadow-sm mt-2">
+          Sign In to Portal
+        </button>
+      </form>
+
+      <!-- Register Form -->
+      <form id="authRegisterForm" onsubmit="handleAuthRegister(event)" class="hidden space-y-3 text-xs">
+        <div>
+          <label class="font-bold text-slate-700 block mb-1">Full Legal Name</label>
+          <input type="text" id="regName" required placeholder="e.g. Alex Mercer" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5">
+        </div>
+        <div>
+          <label class="font-bold text-slate-700 block mb-1">Institutional Email</label>
+          <input type="email" id="regEmail" required placeholder="alex@institution.edu" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5">
+        </div>
+        <div>
+          <label class="font-bold text-slate-700 block mb-1">Department / Branch</label>
+          <input type="text" id="regDept" required placeholder="e.g. Computer Science & Engineering" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5">
+        </div>
+        <div>
+          <label class="font-bold text-slate-700 block mb-1">Account Role</label>
+          <select id="regRole" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 font-medium">
+            <option value="student">Student</option>
+            <option value="faculty">Faculty</option>
+          </select>
+        </div>
+        <div>
+          <label class="font-bold text-slate-700 block mb-1">Password</label>
+          <input type="password" id="regPassword" required placeholder="At least 6 characters" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5">
+        </div>
+        <button type="submit" class="w-full py-2.5 rounded-xl bg-emerald-600 font-bold text-white hover:bg-emerald-700 transition shadow-sm mt-2">
+          Create Account & Sign In
+        </button>
+      </form>
+
+      <!-- Quick Switch Preset Accounts -->
+      <div id="authDemoPanel" class="hidden space-y-2 text-xs">
+        <p class="text-[11px] text-slate-500 mb-2">Instantly sign into predefined institutional benchmark profiles:</p>
+        <button onclick="switchRoleFast('faculty'); closeModal('modalAuth');" class="w-full p-3 rounded-xl border border-brand-200 bg-brand-50 hover:bg-brand-100 flex items-center justify-between text-left transition">
+          <div>
+            <div class="font-bold text-brand-900">Dr. Sarah Connor (Faculty)</div>
+            <div class="text-[11px] text-brand-700">Add courses, upload materials, author quizzes & view scores</div>
+          </div>
+          <i class="fa-solid fa-arrow-right text-brand-600"></i>
+        </button>
+        <button onclick="switchRoleFast('student'); closeModal('modalAuth');" class="w-full p-3 rounded-xl border border-indigo-200 bg-indigo-50 hover:bg-indigo-100 flex items-center justify-between text-left transition">
+          <div>
+            <div class="font-bold text-indigo-900">Alex Mercer (Student)</div>
+            <div class="text-[11px] text-indigo-700">Enrol in courses, view/download materials & take timed quizzes</div>
+          </div>
+          <i class="fa-solid fa-arrow-right text-indigo-600"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST NOTIFICATION CONTAINER -->
+  <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+  <!-- ==================== CORE JAVASCRIPT APPLICATION CODE ==================== -->
+  <script>
+    /**
+     * EDU-PORTAL CORE ENGINE & DATA STORE
+     * Self-contained client-side state with localStorage persistence.
+     */
+
+    // Seed Data
+    const DEFAULT_DATA = {
+      currentUser: {
+        id: "USR-FAC-1",
+        name: "Dr. Sarah Connor",
+        email: "sarah.connor@institution.edu",
+        role: "faculty", // 'faculty' or 'student'
+        department: "Computer Science & Artificial Intelligence",
+        idNumber: "FAC-8842",
+        avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=160&q=80",
+        bio: "Senior Professor of Software Systems and Cloud Architecture. Passionate about interactive and timed pedagogical evaluations."
+      },
+      users: [
+        {
+          id: "USR-FAC-1",
+          name: "Dr. Sarah Connor",
+          email: "sarah.connor@institution.edu",
+          role: "faculty",
+          department: "Computer Science & AI",
+          idNumber: "FAC-8842",
+          avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=160&q=80",
+          bio: "Senior Professor of Software Systems."
+        },
+        {
+          id: "USR-STU-1",
+          name: "Alex Mercer",
+          email: "alex.mercer@student.edu",
+          role: "student",
+          department: "Computer Science",
+          idNumber: "CS-2024-089",
+          avatar: "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=160&q=80",
+          bio: "Undergraduate student specializing in Full-Stack and High Performance Computing."
+        },
+        {
+          id: "USR-STU-2",
+          name: "Emma Watson",
+          email: "emma.watson@student.edu",
+          role: "student",
+          department: "Software Engineering",
+          idNumber: "SE-2024-042",
+          avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=160&q=80",
+          bio: "Final year student focused on Distributed Web Systems."
+        }
+      ],
+      courses: [
+        {
+          id: "CRS-101",
+          code: "CS301",
+          title: "Modern Full-Stack Web Development & Cloud Architecture",
+          category: "Computer Science",
+          facultyId: "USR-FAC-1",
+          facultyName: "Dr. Sarah Connor",
+          color: "from-blue-600 to-indigo-700",
+          description: "Master modern responsive frontend, asynchronous JavaScript, microservices, and robust cloud deployment workflows.",
+          units: [
+            {
+              id: "U-101-1",
+              title: "Unit 1: Responsive Layouts & CSS Grid Systems",
+              materials: [
+                {
+                  id: "MAT-1",
+                  title: "Modern CSS Grid & Flexbox Architectural Reference Guide.pdf",
+                  type: "pdf",
+                  url: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf",
+                  size: "2.4 MB",
+                  uploadedAt: "2026-10-15"
+                },
+                {
+                  id: "MAT-2",
+                  title: "Mastering Asynchronous Event Loops in Browser Engines",
+                  type: "video",
+                  url: "https://www.youtube.com/embed/dQw4w9WgXcQ",
+                  duration: "38 mins",
+                  uploadedAt: "2026-10-18"
+                }
+              ]
+            },
+            {
+              id: "U-101-2",
+              title: "Unit 2: Asynchronous JavaScript & RESTful Microservices",
+              materials: [
+                {
+                  id: "MAT-3",
+                  title: "Async Await Promises and Stream Handlers.pdf",
+                  type: "pdf",
+                  url: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf",
+                  size: "1.9 MB",
+                  uploadedAt: "2026-10-22"
+                },
+                {
+                  id: "MAT-4",
+                  title: "Building Resilient Cloud Microservices with Node.js",
+                  type: "video",
+                  url: "https://www.youtube.com/embed/dQw4w9WgXcQ",
+                  duration: "45 mins",
+                  uploadedAt: "2026-10-25"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          id: "CRS-102",
+          code: "AI401",
+          title: "Deep Learning & Neural Network Foundations",
+          category: "Artificial Intelligence",
+          facultyId: "USR-FAC-1",
+          facultyName: "Dr. Sarah Connor",
+          color: "from-emerald-600 to-teal-700",
+          description: "Explore backpropagation, convolutional layers, attention transformers, and automated machine learning evaluation pipelines.",
+          units: [
+            {
+              id: "U-102-1",
+              title: "Unit 1: Linear Algebra & Gradient Descent Optimization",
+              materials: [
+                {
+                  id: "MAT-5",
+                  title: "Matrix Decomposition and Stochastic Gradients.pdf",
+                  type: "pdf",
+                  url: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf",
+                  size: "3.1 MB",
+                  uploadedAt: "2026-11-01"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      quizzes: [
+        {
+          id: "QZ-101",
+          courseId: "CRS-101",
+          courseTitle: "Modern Full-Stack Web Development & Cloud Architecture",
+          title: "Midterm Assessment: JavaScript & Web Architecture",
+          description: "Evaluate your core understanding of asynchronous event loops, promises, state synchronizations, and HTTP/3 headers.",
+          timeLimitMinutes: 2, // 2 minutes for realistic testing with countdown
+          passingScore: 60,
+          questions: [
+            {
+              id: "Q-1",
+              text: "Which JavaScript engine component coordinates asynchronous non-blocking I/O callbacks and microtasks?",
+              options: [
+                "The Event Loop & Task Queues",
+                "The V8 JIT Assembler alone",
+                "The synchronous Memory Heap Garbage Collector",
+                "The CSSOM Layout Rendering Engine"
+              ],
+              correctAnswer: 0,
+              explanation: "The JavaScript Event Loop monitors the Call Stack and Task/Microtask queues to push deferred callbacks onto the stack once it is empty."
+            },
+            {
+              id: "Q-2",
+              text: "What is the primary difference between a Microtask (e.g. Promise.then) and a Macrotask (e.g. setTimeout)?",
+              options: [
+                "Macrotasks execute before any pending Microtasks in the same turn",
+                "All queued Microtasks are completely drained before the next Macrotask executes",
+                "Microtasks are delegated strictly to web workers in separate threads",
+                "There is no difference; they share a single FIFO queue"
+              ],
+              correctAnswer: 1,
+              explanation: "The microtask queue has higher priority; the runtime drains the entire microtask queue before yielding or executing the next macrotask."
+            },
+            {
+              id: "Q-3",
+              text: "Which HTTP status code signifies that a server has successfully processed a request without returning an entity payload?",
+              options: [
+                "200 OK",
+                "201 Created",
+                "204 No Content",
+                "304 Not Modified"
+              ],
+              correctAnswer: 2,
+              explanation: "HTTP 204 No Content indicates success without any message-body returned in the HTTP response."
+            },
+            {
+              id: "Q-4",
+              text: "In modern responsive CSS, what does the 'ch' unit represent?",
+              options: [
+                "1% of the viewport height",
+                "The width of the glyph '0' (zero) of the element's font",
+                "The character count limit of an HTML input",
+                "The height of uppercase capital letters"
+              ],
+              correctAnswer: 1,
+              explanation: "1ch is defined as the advance measure of the glyph '0' (zero) in the current font."
+            },
+            {
+              id: "Q-5",
+              text: "How does the browser handle a JavaScript 'clearInterval(timerId)' call?",
+              options: [
+                "It immediately resets the system clock to zero",
+                "It stops future execution of the repeated timed function associated with timerId",
+                "It throws a synchronous TimeoutException",
+                "It kills the underlying rendering thread"
+              ],
+              correctAnswer: 1,
+              explanation: "clearInterval cancels the timed repeating action that was previously established by a call to setInterval."
+            }
+          ]
+        },
+        {
+          id: "QZ-102",
+          courseId: "CRS-102",
+          courseTitle: "Deep Learning & Neural Network Foundations",
+          title: "Quiz 1: Optimization & Loss Surfaces",
+          description: "Assess fundamental knowledge of gradient calculations, vanishing gradients, and activation functions.",
+          timeLimitMinutes: 1, // 1 minute for fast testing
+          passingScore: 60,
+          questions: [
+            {
+              id: "Q-6",
+              text: "Which activation function is most susceptible to the 'vanishing gradient problem' during deep backpropagation?",
+              options: [
+                "Standard Sigmoid / Logistic function",
+                "Rectified Linear Unit (ReLU)",
+                "Leaky ReLU",
+                "GeLU"
+              ],
+              correctAnswer: 0,
+              explanation: "Sigmoids saturate near 0 and 1, where the derivative approaches zero, causing gradients to vanish exponentially in deep layers."
+            },
+            {
+              id: "Q-7",
+              text: "What is the primary role of the momentum hyperparameter in stochastic gradient descent (SGD)?",
+              options: [
+                "To increase memory footprint linearly",
+                "To accelerate gradient vectors in the right directions and dampen oscillations",
+                "To automatically prune weights with zero values",
+                "To invert the Hessian matrix"
+              ],
+              correctAnswer: 1,
+              explanation: "Momentum accumulates past velocity vectors to accelerate descent along ravines while damping high-frequency lateral oscillations."
+            }
+          ]
+        }
+      ],
+      enrollments: [
+        {
+          studentId: "USR-STU-1",
+          courseId: "CRS-101",
+          enrolledAt: "2026-10-10",
+          progressPercent: 75
+        }
+      ],
+      submissions: [
+        {
+          id: "SUB-901",
+          quizId: "QZ-101",
+          courseId: "CRS-101",
+          courseTitle: "Modern Full-Stack Web Development & Cloud Architecture",
+          quizTitle: "Midterm Assessment: JavaScript & Web Architecture",
+          studentId: "USR-STU-2",
+          studentName: "Emma Watson",
+          studentEmail: "emma.watson@student.edu",
+          score: 5,
+          total: 5,
+          percentage: 100,
+          passed: true,
+          timeTakenSeconds: 84,
+          autoSubmitted: false,
+          submittedAt: "2026-11-20 11:15",
+          answers: { "Q-1": 0, "Q-2": 1, "Q-3": 2, "Q-4": 1, "Q-5": 1 }
+        }
+      ]
+    };
+
+    // State Variables
+    let appData = {};
+    let activeQuizSession = null;
+    let quizCountdownTimer = null;
+    let currentQuizQuestionIndex = 0;
+    let currentMaterialForCourseId = null;
+
+    /**
+     * INITIALIZATION & LOCAL STORAGE
+     */
+    function initApp() {
+      const stored = localStorage.getItem("eduportal_state_v1");
+      if (stored) {
+        try {
+          appData = JSON.parse(stored);
+        } catch (e) {
+          appData = JSON.parse(JSON.stringify(DEFAULT_DATA));
+          saveState();
+        }
+      } else {
+        appData = JSON.parse(JSON.stringify(DEFAULT_DATA));
+        saveState();
+      }
+
+      // Check current user role & initialize view
+      updateHeaderAndSidebarUser();
+      
+      if (appData.currentUser.role === 'faculty') {
+        navigateTo('view-faculty-dashboard');
+      } else {
+        navigateTo('view-student-catalog');
+      }
+    }
+
+    function saveState() {
+      localStorage.setItem("eduportal_state_v1", JSON.stringify(appData));
+    }
+
+    function resetSampleData() {
+      if (confirm("Reset all portal data back to original demonstration seed data?")) {
+        appData = JSON.parse(JSON.stringify(DEFAULT_DATA));
+        saveState();
+        updateHeaderAndSidebarUser();
+        navigateToHome();
+        showToast("System database reset to initial demonstration state", "success");
+      }
+    }
+
+    /**
+     * NAVIGATION & VIEW ROUTING
+     */
+    function navigateTo(viewId) {
+      // Hide all views
+      document.querySelectorAll(".app-view").forEach(el => el.classList.add("hidden"));
+
+      // Show target view
+      const target = document.getElementById(viewId);
+      if (target) {
+        target.classList.remove("hidden");
+      }
+
+      // Highlight active nav links
+      document.querySelectorAll(".nav-link").forEach(link => {
+        if (link.dataset.view === viewId) {
+          link.classList.add("bg-brand-50", "text-brand-600");
+          link.classList.remove("text-slate-600");
+        } else {
+          link.classList.remove("bg-brand-50", "text-brand-600");
+          link.classList.add("text-slate-600");
+        }
+      });
+
+      // View-specific renders
+      if (viewId === 'view-faculty-dashboard') renderFacultyDashboard();
+      if (viewId === 'view-faculty-courses') renderFacultyCourses();
+      if (viewId === 'view-faculty-materials') renderFacultyMaterialsView();
+      if (viewId === 'view-faculty-quizzes') renderFacultyQuizzes();
+      if (viewId === 'view-faculty-scores') renderFacultyScoresView();
+      if (viewId === 'view-student-catalog') renderStudentCatalog();
+      if (viewId === 'view-student-enrolled') renderStudentEnrolled();
+      if (viewId === 'view-student-progress') renderStudentProgressView();
+      if (viewId === 'view-profile') populateProfileForm();
+
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function navigateToHome() {
+      if (appData.currentUser.role === 'faculty') {
+        navigateTo('view-faculty-dashboard');
+      } else {
+        navigateTo('view-student-catalog');
+      }
+    }
+
+    /**
+     * USER SWITCHING & ROLE MANAGEMENT
+     */
+    function updateHeaderAndSidebarUser() {
+      const user = appData.currentUser;
+      const isFaculty = user.role === 'faculty';
+
+      // Navbar
+      document.getElementById("navUserName").textContent = user.name;
+      document.getElementById("navUserRoleBadge").textContent = user.role.toUpperCase();
+      document.getElementById("navUserAvatar").src = user.avatar;
+      document.getElementById("dropUserName").textContent = user.name;
+      document.getElementById("dropUserEmail").textContent = user.email;
+
+      // Sidebar
+      document.getElementById("sideUserName").textContent = user.name;
+      document.getElementById("sideUserRole").textContent = isFaculty ? "Faculty Portal" : "Student Portal";
+      document.getElementById("sideUserAvatar").src = user.avatar;
+
+      // Toggle Role Navigation sections
+      if (isFaculty) {
+        document.getElementById("facultyNavSection").classList.remove("hidden");
+        document.getElementById("studentNavSection").classList.add("hidden");
+        // Quick buttons
+        document.getElementById("quickRoleFacultyBtn").className = "px-3 py-1 text-xs font-semibold rounded-lg bg-white shadow-xs text-brand-700 flex items-center gap-1.5";
+        document.getElementById("quickRoleStudentBtn").className = "px-3 py-1 text-xs font-semibold rounded-lg text-slate-500 hover:text-slate-900 flex items-center gap-1.5";
+      } else {
+        document.getElementById("facultyNavSection").classList.add("hidden");
+        document.getElementById("studentNavSection").classList.remove("hidden");
+        // Quick buttons
+        document.getElementById("quickRoleFacultyBtn").className = "px-3 py-1 text-xs font-semibold rounded-lg text-slate-500 hover:text-slate-900 flex items-center gap-1.5";
+        document.getElementById("quickRoleStudentBtn").className = "px-3 py-1 text-xs font-semibold rounded-lg bg-white shadow-xs text-brand-700 flex items-center gap-1.5";
+      }
+    }
+
+    function switchRoleFast(role) {
+      if (role === 'faculty') {
+        appData.currentUser = appData.users.find(u => u.role === 'faculty') || {
+          id: "USR-FAC-1",
+          name: "Dr. Sarah Connor",
+          email: "sarah.connor@institution.edu",
+          role: "faculty",
+          department: "Computer Science & AI",
+          idNumber: "FAC-8842",
+          avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=160&q=80",
+          bio: "Senior Professor of Software Systems."
+        };
+        showToast("Switched active session to Faculty (Dr. Sarah Connor)", "info");
+      } else {
+        appData.currentUser = appData.users.find(u => u.role === 'student') || {
+          id: "USR-STU-1",
+          name: "Alex Mercer",
+          email: "alex.mercer@student.edu",
+          role: "student",
+          department: "Computer Science",
+          idNumber: "CS-2024-089",
+          avatar: "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=160&q=80",
+          bio: "Undergraduate student specializing in Full-Stack and High Performance Computing."
+        };
+        showToast("Switched active session to Student (Alex Mercer)", "info");
+      }
+      saveState();
+      updateHeaderAndSidebarUser();
+      navigateToHome();
+    }
+
+    /**
+     * =========================================================================
+     * FACULTY PORTAL: DASHBOARD, COURSES, MATERIALS & QUIZZES
+     * =========================================================================
+     */
+
+    function renderFacultyDashboard() {
+      document.getElementById("dashFacultyName").textContent = appData.currentUser.name;
+      
+      const totalCourses = appData.courses.length;
+      const totalEnrollments = appData.enrollments.length;
+      const totalQuizzes = appData.quizzes.length;
+      const totalSubmissions = appData.submissions.length;
+
+      document.getElementById("statTotalCourses").textContent = totalCourses;
+      document.getElementById("statTotalEnrollments").textContent = totalEnrollments;
+      document.getElementById("statTotalQuizzes").textContent = totalQuizzes;
+      document.getElementById("statTotalSubmissions").textContent = totalSubmissions;
+
+      // Render recent courses in dashboard
+      const dashCoursesContainer = document.getElementById("dashCoursesContainer");
+      if (appData.courses.length === 0) {
+        dashCoursesContainer.innerHTML = `<div class="p-4 text-center text-slate-400">No courses created yet. Click "+ Create New Course" to get started.</div>`;
+      } else {
+        dashCoursesContainer.innerHTML = appData.courses.slice(0, 3).map(c => `
+          <div class="flex items-center justify-between p-3.5 rounded-xl border border-slate-100 hover:border-slate-200 bg-slate-50/50 hover:bg-slate-50 transition">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-lg bg-gradient-to-br ${c.color || 'from-blue-600 to-indigo-700'} text-white flex items-center justify-center font-bold text-xs shadow-xs">
+                ${c.code}
+              </div>
+              <div>
+                <h4 class="font-bold text-slate-800 text-xs">${escapeHtml(c.title)}</h4>
+                <p class="text-[11px] text-slate-400">${c.units.length} Units • ${getQuizCountForCourse(c.id)} Quizzes • ${getEnrollmentCountForCourse(c.id)} Students</p>
+              </div>
+            </div>
+            <div class="flex items-center gap-1.5">
+              <button onclick="manageMaterialsForCourse('${c.id}')" class="px-2.5 py-1 text-xs font-semibold rounded-lg bg-brand-50 text-brand-700 hover:bg-brand-100">
+                Materials
+              </button>
+              <button onclick="openEditCourseModal('${c.id}')" class="px-2.5 py-1 text-xs font-semibold rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200">
+                Edit
+              </button>
+            </div>
+          </div>
+        `).join('');
+      }
+
+      // Render recent submissions in dashboard
+      const recentSubsContainer = document.getElementById("dashRecentSubmissions");
+      if (appData.submissions.length === 0) {
+        recentSubsContainer.innerHTML = `<div class="py-6 text-center text-slate-400">No student submissions recorded yet.</div>`;
+      } else {
+        recentSubsContainer.innerHTML = appData.submissions.slice(-4).reverse().map(s => `
+          <div class="p-2.5 rounded-xl border border-slate-100 bg-slate-50 flex items-center justify-between">
+            <div>
+              <div class="font-bold text-slate-800">${escapeHtml(s.studentName)}</div>
+              <div class="text-[10px] text-slate-400">${escapeHtml(s.quizTitle)}</div>
+            </div>
+            <div class="text-right">
+              <span class="inline-block px-2 py-0.5 rounded text-[10px] font-extrabold ${s.passed ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}">
+                ${s.percentage}% ${s.passed ? 'PASS' : 'FAIL'}
+              </span>
+              <div class="text-[9px] text-slate-400 mt-0.5">${s.submittedAt}</div>
+            </div>
+          </div>
+        `).join('');
+      }
+    }
+
+    function renderFacultyCourses() {
+      const container = document.getElementById("facultyCoursesGrid");
+      if (appData.courses.length === 0) {
+        container.innerHTML = `
+          <div class="col-span-full py-12 text-center text-slate-400 bg-white rounded-3xl border border-dashed border-slate-300">
+            <i class="fa-solid fa-graduation-cap text-4xl mb-3 text-slate-300"></i>
+            <h4 class="font-bold text-slate-700">No Courses Available</h4>
+            <p class="text-xs text-slate-400 mt-1 mb-4">Start by adding your first institutional curriculum offering.</p>
+            <button onclick="openAddCourseModal()" class="px-4 py-2 bg-brand-600 text-white rounded-xl text-xs font-bold hover:bg-brand-700">Add Course</button>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = appData.courses.map(c => `
+        <div class="bg-white rounded-3xl border border-slate-200/80 shadow-xs hover:shadow-md transition overflow-hidden flex flex-col justify-between">
+          <div class="p-6">
+            <div class="flex items-start justify-between gap-3 mb-3">
+              <span class="px-2.5 py-1 rounded-lg bg-brand-50 text-brand-700 font-extrabold text-[11px] tracking-wide uppercase border border-brand-100">
+                ${escapeHtml(c.code)}
+              </span>
+              <span class="text-xs font-semibold text-slate-400">${escapeHtml(c.category)}</span>
+            </div>
+            <h3 class="font-display font-bold text-base text-slate-900 leading-snug mb-2">${escapeHtml(c.title)}</h3>
+            <p class="text-xs text-slate-500 leading-relaxed line-clamp-2 mb-4">${escapeHtml(c.description)}</p>
+
+            <div class="flex items-center gap-4 text-xs text-slate-500 font-medium pt-3 border-t border-slate-100">
+              <span class="flex items-center gap-1.5"><i class="fa-solid fa-layer-group text-brand-500"></i> ${c.units.length} Units</span>
+              <span class="flex items-center gap-1.5"><i class="fa-solid fa-stopwatch text-indigo-500"></i> ${getQuizCountForCourse(c.id)} Quizzes</span>
+              <span class="flex items-center gap-1.5"><i class="fa-solid fa-user-check text-emerald-500"></i> ${getEnrollmentCountForCourse(c.id)} Enrolled</span>
+            </div>
+          </div>
+
+          <div class="px-6 py-3.5 bg-slate-50/80 border-t border-slate-100 flex items-center justify-between gap-2">
+            <button onclick="manageMaterialsForCourse('${c.id}')" class="px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-brand-700 font-bold text-xs hover:bg-brand-50 transition flex items-center gap-1.5">
+              <i class="fa-solid fa-folder-tree"></i> Materials (${getTotalMaterialCount(c)})
+            </button>
+            <div class="flex items-center gap-1.5">
+              <button onclick="openEditCourseModal('${c.id}')" class="w-8 h-8 rounded-lg bg-white border border-slate-200 text-slate-600 hover:text-brand-600 flex items-center justify-center text-xs" title="Edit Course Details">
+                <i class="fa-solid fa-pen"></i>
+              </button>
+              <button onclick="deleteCourse('${c.id}')" class="w-8 h-8 rounded-lg bg-white border border-slate-200 text-slate-600 hover:text-rose-600 flex items-center justify-center text-xs" title="Delete Course">
+                <i class="fa-solid fa-trash"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function openAddCourseModal() {
+      document.getElementById("modalCourseTitle").textContent = "Add New Academic Course";
+      document.getElementById("editCourseId").value = "";
+      document.getElementById("courseCodeInput").value = "";
+      document.getElementById("courseTitleInput").value = "";
+      document.getElementById("courseDescInput").value = "";
+      openModal("modalAddCourse");
+    }
+
+    function openEditCourseModal(courseId) {
+      const course = appData.courses.find(c => c.id === courseId);
+      if (!course) return;
+
+      document.getElementById("modalCourseTitle").textContent = "Edit Course Details";
+      document.getElementById("editCourseId").value = course.id;
+      document.getElementById("courseCodeInput").value = course.code;
+      document.getElementById("courseCategoryInput").value = course.category || "Computer Science";
+      document.getElementById("courseTitleInput").value = course.title;
+      document.getElementById("courseDescInput").value = course.description;
+      document.getElementById("courseColorInput").value = course.color || "from-blue-600 to-indigo-700";
+      openModal("modalAddCourse");
+    }
+
+    function handleSaveCourse(e) {
+      e.preventDefault();
+      const editId = document.getElementById("editCourseId").value;
+      const code = document.getElementById("courseCodeInput").value.trim();
+      const category = document.getElementById("courseCategoryInput").value;
+      const title = document.getElementById("courseTitleInput").value.trim();
+      const desc = document.getElementById("courseDescInput").value.trim();
+      const color = document.getElementById("courseColorInput").value;
+
+      if (!code || !title) {
+        showToast("Please provide both Course Code and Title", "error");
+        return;
+      }
+
+      if (editId) {
+        // Update
+        const idx = appData.courses.findIndex(c => c.id === editId);
+        if (idx !== -1) {
+          appData.courses[idx].code = code;
+          appData.courses[idx].category = category;
+          appData.courses[idx].title = title;
+          appData.courses[idx].description = desc;
+          appData.courses[idx].color = color;
+          showToast("Course successfully updated!", "success");
+        }
+      } else {
+        // Create new
+        const newCourse = {
+          id: "CRS-" + Date.now(),
+          code: code,
+          category: category,
+          title: title,
+          description: desc,
+          color: color,
+          facultyId: appData.currentUser.id,
+          facultyName: appData.currentUser.name,
+          units: [
+            {
+              id: "U-" + Date.now() + "-1",
+              title: "Unit 1: Course Introduction & Fundamental Principles",
+              materials: []
+            }
+          ]
+        };
+        appData.courses.push(newCourse);
+        showToast("New Course published to catalog!", "success");
+      }
+
+      saveState();
+      closeModal("modalAddCourse");
+      renderFacultyCourses();
+      renderFacultyDashboard();
+    }
+
+    function deleteCourse(courseId) {
+      const course = appData.courses.find(c => c.id === courseId);
+      if (!course) return;
+
+      if (confirm(`Are you sure you want to permanently delete course "${course.title}"? All unit materials and quizzes will also be removed.`)) {
+        appData.courses = appData.courses.filter(c => c.id !== courseId);
+        // Also remove associated quizzes
+        appData.quizzes = appData.quizzes.filter(q => q.courseId !== courseId);
+        // Remove enrollments
+        appData.enrollments = appData.enrollments.filter(e => e.courseId !== courseId);
+        
+        saveState();
+        showToast("Course and curriculum materials deleted", "info");
+        renderFacultyCourses();
+        renderFacultyDashboard();
+      }
+    }
+
+    /**
+     * UNIT-WISE STUDY MATERIAL MANAGEMENT
+     */
+    function renderFacultyMaterialsView() {
+      populateCourseSelectForMaterials();
+      renderUnitMaterialsForSelectedCourse();
+    }
+
+    function populateCourseSelectForMaterials() {
+      const select = document.getElementById("materialCourseSelect");
+      if (!select) return;
+
+      select.innerHTML = appData.courses.map(c => `
+        <option value="${c.id}" ${currentMaterialForCourseId === c.id ? 'selected' : ''}>${escapeHtml(c.code)} - ${escapeHtml(c.title)}</option>
+      `).join('');
+
+      if (!currentMaterialForCourseId && appData.courses.length > 0) {
+        currentMaterialForCourseId = appData.courses[0].id;
+      }
+    }
+
+    function manageMaterialsForCourse(courseId) {
+      currentMaterialForCourseId = courseId;
+      navigateTo('view-faculty-materials');
+      const select = document.getElementById("materialCourseSelect");
+      if (select) select.value = courseId;
+      renderUnitMaterialsForSelectedCourse();
+    }
+
+    function renderUnitMaterialsForSelectedCourse() {
+      const select = document.getElementById("materialCourseSelect");
+      const courseId = select ? select.value : currentMaterialForCourseId;
+      currentMaterialForCourseId = courseId;
+
+      const course = appData.courses.find(c => c.id === courseId);
+      const titleSpan = document.getElementById("currentManagingCourseTitle");
+      const container = document.getElementById("unitMaterialsContainer");
+
+      if (!course) {
+        if (titleSpan) titleSpan.textContent = "None Selected";
+        if (container) container.innerHTML = `<div class="p-8 text-center text-slate-400">Please create a course first.</div>`;
+        return;
+      }
+
+      if (titleSpan) titleSpan.textContent = `${course.code}: ${course.title}`;
+
+      if (!course.units || course.units.length === 0) {
+        container.innerHTML = `
+          <div class="bg-white p-8 rounded-3xl border border-dashed border-slate-300 text-center text-slate-400">
+            <i class="fa-solid fa-folder-open text-4xl mb-3 text-slate-300"></i>
+            <h4 class="font-bold text-slate-700">No Units Defined</h4>
+            <p class="text-xs text-slate-400 mt-1 mb-4">Click "Add New Unit" to organize study materials unit-wise.</p>
+            <button onclick="openAddUnitModal()" class="px-4 py-2 bg-brand-600 text-white rounded-xl text-xs font-bold">Add First Unit</button>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = course.units.map((unit, uIdx) => `
+        <div class="bg-white rounded-3xl border border-slate-200/90 shadow-xs overflow-hidden">
+          <div class="p-5 bg-slate-50/70 border-b border-slate-200/70 flex items-center justify-between gap-3">
+            <div class="flex items-center gap-3">
+              <div class="w-8 h-8 rounded-lg bg-brand-100 text-brand-700 font-extrabold text-xs flex items-center justify-center">
+                U${uIdx + 1}
+              </div>
+              <h3 class="font-display font-bold text-sm text-slate-900">${escapeHtml(unit.title)}</h3>
+            </div>
+            <div class="flex items-center gap-2">
+              <button onclick="openAddMaterialModalForSpecificUnit('${course.id}', '${unit.id}')" class="px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-brand-700 font-bold text-xs hover:bg-brand-50 transition flex items-center gap-1">
+                <i class="fa-solid fa-plus"></i> Add Material
+              </button>
+              <button onclick="deleteUnit('${course.id}', '${unit.id}')" class="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg" title="Delete Unit">
+                <i class="fa-solid fa-trash text-xs"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- Unit Materials List -->
+          <div class="p-5">
+            ${unit.materials.length === 0 ? `
+              <div class="py-4 text-center text-xs text-slate-400 italic">
+                No materials uploaded for this unit yet. Click "Add Material" to upload a PDF or add a Video Lecture link.
+              </div>
+            ` : `
+              <div class="space-y-2.5">
+                ${unit.materials.map(m => `
+                  <div class="flex items-center justify-between p-3 rounded-2xl border border-slate-100 hover:border-slate-200 bg-white hover:bg-slate-50 transition">
+                    <div class="flex items-center gap-3">
+                      <div class="w-9 h-9 rounded-xl flex items-center justify-center text-sm font-bold ${m.type === 'pdf' ? 'bg-rose-50 text-rose-600' : 'bg-red-50 text-red-600'}">
+                        <i class="fa-solid ${m.type === 'pdf' ? 'fa-file-pdf' : 'fa-circle-play'}"></i>
+                      </div>
+                      <div>
+                        <h4 class="font-bold text-slate-800 text-xs">${escapeHtml(m.title)}</h4>
+                        <span class="text-[10px] text-slate-400 uppercase font-semibold">
+                          ${m.type === 'pdf' ? 'PDF Document' : 'Video Stream'} ${m.size ? '• ' + m.size : ''} ${m.duration ? '• ' + m.duration : ''}
+                        </span>
+                      </div>
+                    </div>
+                    <div class="flex items-center gap-2">
+                      <button onclick="previewMaterial('${m.title}', '${m.type}', '${m.url}')" class="px-3 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition flex items-center gap-1">
+                        <i class="fa-regular fa-eye"></i> View
+                      </button>
+                      <button onclick="deleteMaterial('${course.id}', '${unit.id}', '${m.id}')" class="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg">
+                        <i class="fa-solid fa-trash text-xs"></i>
+                      </button>
+                    </div>
+                  </div>
+                `).join('')}
+              </div>
+            `}
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function openAddUnitModal() {
+      const select = document.getElementById("unitCourseSelect");
+      select.innerHTML = appData.courses.map(c => `
+        <option value="${c.id}" ${currentMaterialForCourseId === c.id ? 'selected' : ''}>${c.code} - ${c.title}</option>
+      `).join('');
+      document.getElementById("unitTitleInput").value = "";
+      openModal("modalAddUnit");
+    }
+
+    function handleSaveUnit(e) {
+      e.preventDefault();
+      const courseId = document.getElementById("unitCourseSelect").value;
+      const title = document.getElementById("unitTitleInput").value.trim();
+
+      if (!title) return;
+
+      const course = appData.courses.find(c => c.id === courseId);
+      if (course) {
+        if (!course.units) course.units = [];
+        course.units.push({
+          id: "U-" + Date.now(),
+          title: title,
+          materials: []
+        });
+        saveState();
+        showToast("Unit created successfully", "success");
+        closeModal("modalAddUnit");
+        currentMaterialForCourseId = courseId;
+        renderUnitMaterialsForSelectedCourse();
+      }
+    }
+
+    function deleteUnit(courseId, unitId) {
+      const course = appData.courses.find(c => c.id === courseId);
+      if (!course) return;
+
+      if (confirm("Delete this unit and its study materials?")) {
+        course.units = course.units.filter(u => u.id !== unitId);
+        saveState();
+        showToast("Unit removed", "info");
+        renderUnitMaterialsForSelectedCourse();
+      }
+    }
+
+    function openAddMaterialModal() {
+      populateMaterialCourseAndUnits();
+      openModal("modalAddMaterial");
+    }
+
+    function openAddMaterialModalForSpecificUnit(courseId, unitId) {
+      populateMaterialCourseAndUnits(courseId, unitId);
+      openModal("modalAddMaterial");
+    }
+
+    function populateMaterialCourseAndUnits(selectedCourseId, selectedUnitId) {
+      const cSelect = document.getElementById("matCourseSelect");
+      cSelect.innerHTML = appData.courses.map(c => `
+        <option value="${c.id}" ${(selectedCourseId || currentMaterialForCourseId) === c.id ? 'selected' : ''}>${c.code} - ${c.title}</option>
+      `).join('');
+
+      populateUnitDropdownForMaterialModal(selectedUnitId);
+      document.getElementById("matTitleInput").value = "";
+    }
+
+    function populateUnitDropdownForMaterialModal(selectedUnitId) {
+      const courseId = document.getElementById("matCourseSelect").value;
+      const course = appData.courses.find(c => c.id === courseId);
+      const uSelect = document.getElementById("matUnitSelect");
+
+      if (!course || !course.units || course.units.length === 0) {
+        uSelect.innerHTML = `<option value="">No units found. Add unit first.</option>`;
+        return;
+      }
+
+      uSelect.innerHTML = course.units.map(u => `
+        <option value="${u.id}" ${selectedUnitId === u.id ? 'selected' : ''}>${escapeHtml(u.title)}</option>
+      `).join('');
+    }
+
+    function toggleMaterialTypeInput() {
+      const radio = document.querySelector('input[name="materialTypeRadio"]:checked');
+      const label = document.getElementById("matUrlLabel");
+      const input = document.getElementById("matUrlInput");
+      const help = document.getElementById("matUrlHelp");
+
+      if (radio && radio.value === 'video') {
+        label.textContent = "Video Stream / YouTube Embed URL";
+        input.value = "https://www.youtube.com/embed/dQw4w9WgXcQ";
+        help.textContent = "Paste any MP4 direct stream link or YouTube/Vimeo embed URL";
+      } else {
+        label.textContent = "Document URL / PDF Resource";
+        input.value = "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf";
+        help.textContent = "Provide direct PDF link or study document resource URL";
+      }
+    }
+
+    function handleSaveMaterial(e) {
+      e.preventDefault();
+      const courseId = document.getElementById("matCourseSelect").value;
+      const unitId = document.getElementById("matUnitSelect").value;
+      const type = document.querySelector('input[name="materialTypeRadio"]:checked').value;
+      const title = document.getElementById("matTitleInput").value.trim();
+      const url = document.getElementById("matUrlInput").value.trim();
+
+      if (!courseId || !unitId || !title || !url) {
+        showToast("Please fill all material fields", "error");
+        return;
+      }
+
+      const course = appData.courses.find(c => c.id === courseId);
+      if (!course) return;
+
+      const unit = course.units.find(u => u.id === unitId);
+      if (!unit) return;
+
+      const newMat = {
+        id: "MAT-" + Date.now(),
+        title: title,
+        type: type,
+        url: url,
+        size: type === 'pdf' ? (Math.random() * 2 + 1).toFixed(1) + " MB" : null,
+        duration: type === 'video' ? Math.floor(Math.random() * 30 + 15) + " mins" : null,
+        uploadedAt: new Date().toISOString().split('T')[0]
+      };
+
+      unit.materials.push(newMat);
+      saveState();
+      closeModal("modalAddMaterial");
+      showToast("Study material added unit-wise!", "success");
+      currentMaterialForCourseId = courseId;
+      renderUnitMaterialsForSelectedCourse();
+    }
+
+    function deleteMaterial(courseId, unitId, matId) {
+      const course = appData.courses.find(c => c.id === courseId);
+      if (!course) return;
+      const unit = course.units.find(u => u.id === unitId);
+      if (!unit) return;
+
+      if (confirm("Delete this study material?")) {
+        unit.materials = unit.materials.filter(m => m.id !== matId);
+        saveState();
+        showToast("Material removed", "info");
+        renderUnitMaterialsForSelectedCourse();
+      }
+    }
+
+    /**
+     * MATERIAL VIEWER & DOWNLOAD HELPER
+     */
+    function previewMaterial(title, type, url) {
+      document.getElementById("viewerTitle").textContent = title;
+      document.getElementById("viewerSubtitle").textContent = type === 'pdf' ? "Official PDF Study Guide" : "Recorded Lecture Stream";
+      
+      const icon = document.getElementById("viewerIcon");
+      if (type === 'pdf') {
+        icon.className = "w-8 h-8 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center text-sm font-bold";
+        icon.innerHTML = `<i class="fa-solid fa-file-pdf"></i>`;
+      } else {
+        icon.className = "w-8 h-8 rounded-lg bg-red-50 text-red-600 flex items-center justify-center text-sm font-bold";
+        icon.innerHTML = `<i class="fa-solid fa-circle-play"></i>`;
+      }
+
+      const downloadBtn = document.getElementById("viewerDownloadBtn");
+      downloadBtn.onclick = () => downloadMaterialFile(title, type);
+
+      const contentBox = document.getElementById("viewerContentBox");
+      if (type === 'pdf') {
+        contentBox.innerHTML = `
+          <div class="w-full h-[500px] flex flex-col bg-white">
+            <div class="p-3 bg-slate-800 text-white flex items-center justify-between text-xs">
+              <span class="font-mono flex items-center gap-2"><i class="fa-solid fa-file-pdf text-rose-400"></i> ${escapeHtml(title)}</span>
+              <span class="text-slate-400">PDF Document Preview</span>
+            </div>
+            <iframe src="${url}" class="w-full flex-1 border-0" title="PDF Document Viewer">
+              <div class="p-8 text-center text-slate-500">
+                Your browser cannot display embedded PDF directly. 
+                <a href="${url}" target="_blank" class="text-brand-600 font-bold underline">Click here to open directly</a>
+              </div>
+            </iframe>
+          </div>
+        `;
+      } else {
+        contentBox.innerHTML = `
+          <div class="w-full h-[450px] bg-black flex items-center justify-center">
+            <iframe src="${url}" class="w-full h-full border-0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+          </div>
+        `;
+      }
+
+      openModal("modalViewMaterial");
+    }
+
+    function downloadMaterialFile(title, type) {
+      const content = `======================================================
+INSTITUTIONAL STUDY MATERIAL REPOSITORY
+Document: ${title}
+Material Type: ${type.toUpperCase()}
+Generated on: ${new Date().toLocaleString()}
+Institution: EduPortal Academic Learning System
+======================================================
+
+TABLE OF CONTENTS & SYLLABUS HIGHLIGHTS:
+1. Executive Summary & Prerequisite Core Concepts
+2. Theoretical Framework & Architecture
+3. Implementations, Code Patterns & Worked Examples
+4. Assessment Preparation & Review Questions
+
+Notes: This file has been fetched and verified from the institution's academic portal repository.`;
+
+      const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = `${title.replace(/[^a-zA-Z0-9_-]/g, "_")}_Notes.txt`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      showToast(`Downloading: ${title}`, "success");
+    }
+
+    /**
+     * QUIZ MANAGEMENT & QUESTION BUILDER (FACULTY)
+     */
+    let builderQuestionsList = [];
+
+    function renderFacultyQuizzes() {
+      const container = document.getElementById("facultyQuizzesList");
+      if (appData.quizzes.length === 0) {
+        container.innerHTML = `
+          <div class="col-span-full py-12 text-center text-slate-400 bg-white rounded-3xl border border-dashed border-slate-300">
+            <i class="fa-solid fa-stopwatch text-4xl mb-3 text-slate-300"></i>
+            <h4 class="font-bold text-slate-700">No Quizzes Configured</h4>
+            <p class="text-xs text-slate-400 mt-1 mb-4">Create your first timed online assessment for students.</p>
+            <button onclick="openCreateQuizModal()" class="px-4 py-2 bg-brand-600 text-white rounded-xl text-xs font-bold hover:bg-brand-700">Create Quiz</button>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = appData.quizzes.map(q => {
+        const course = appData.courses.find(c => c.id === q.courseId);
+        const subCount = appData.submissions.filter(s => s.quizId === q.id).length;
+
+        return `
+          <div class="bg-white rounded-3xl border border-slate-200/80 shadow-xs hover:shadow-md transition overflow-hidden flex flex-col justify-between">
+            <div class="p-6">
+              <div class="flex items-center justify-between gap-2 mb-3">
+                <span class="px-2.5 py-1 rounded-lg bg-indigo-50 text-indigo-700 font-extrabold text-[11px] uppercase tracking-wide">
+                  ${course ? course.code : 'COURSE'}
+                </span>
+                <span class="inline-flex items-center gap-1 text-xs font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-md">
+                  <i class="fa-solid fa-clock"></i> ${q.timeLimitMinutes} Mins Countdown
+                </span>
+              </div>
+              <h3 class="font-display font-bold text-base text-slate-900 leading-snug mb-2">${escapeHtml(q.title)}</h3>
+              <p class="text-xs text-slate-500 line-clamp-2 mb-4">${escapeHtml(q.description)}</p>
+
+              <div class="grid grid-cols-3 gap-2 py-3 border-y border-slate-100 text-center text-xs">
+                <div>
+                  <span class="block text-slate-400 text-[10px] font-bold uppercase">Questions</span>
+                  <span class="font-bold text-slate-800">${q.questions.length} MCQs</span>
+                </div>
+                <div>
+                  <span class="block text-slate-400 text-[10px] font-bold uppercase">Passing</span>
+                  <span class="font-bold text-slate-800">${q.passingScore}%</span>
+                </div>
+                <div>
+                  <span class="block text-slate-400 text-[10px] font-bold uppercase">Attempts</span>
+                  <span class="font-bold text-brand-600">${subCount} Evaluated</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="px-6 py-3.5 bg-slate-50 flex items-center justify-between">
+              <span class="text-[11px] text-slate-400">Auto-evaluates immediately</span>
+              <div class="flex items-center gap-2">
+                <button onclick="deleteQuiz('${q.id}')" class="px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-rose-600 hover:bg-rose-50 text-xs font-bold transition flex items-center gap-1">
+                  <i class="fa-solid fa-trash"></i> Delete
+                </button>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function openCreateQuizModal() {
+      const select = document.getElementById("quizCourseSelect");
+      select.innerHTML = appData.courses.map(c => `
+        <option value="${c.id}">${c.code} - ${c.title}</option>
+      `).join('');
+
+      document.getElementById("quizTitleInput").value = "";
+      document.getElementById("quizDescInput").value = "";
+      document.getElementById("quizDurationInput").value = "2";
+      document.getElementById("quizPassingScoreInput").value = "60";
+
+      // Initialize with 2 default sample question fields
+      builderQuestionsList = [
+        {
+          id: "BQ-1",
+          text: "What is the primary role of the Document Object Model (DOM) in web browsers?",
+          options: [
+            "It acts as a programming interface that represents the page structure as nodes and objects",
+            "It is a database engine for client-side storage",
+            "It compiles JavaScript into machine code",
+            "It negotiates TLS security certificates"
+          ],
+          correctAnswer: 0,
+          explanation: "The DOM represents an HTML document as a node tree so programs can manipulate document structure, style, and content."
+        },
+        {
+          id: "BQ-2",
+          text: "What occurs in a JavaScript countdown timer when clearInterval is executed?",
+          options: [
+            "The active setInterval repeating loop ceases execution",
+            "The browser tab terminates",
+            "The variable memory is permanently destroyed",
+            "The web server shuts down"
+          ],
+          correctAnswer: 0,
+          explanation: "clearInterval stops the repeated execution of the timer callback referenced by the interval ID."
+        }
+      ];
+
+      renderQuestionFieldsInBuilder();
+      openModal("modalCreateQuiz");
+    }
+
+    function renderQuestionFieldsInBuilder() {
+      const container = document.getElementById("quizQuestionsBuilderContainer");
+      container.innerHTML = builderQuestionsList.map((q, qIndex) => `
+        <div class="p-4 bg-slate-50 rounded-2xl border border-slate-200/80 space-y-3 relative">
+          <div class="flex items-center justify-between">
+            <span class="font-extrabold text-brand-700 text-xs">Question ${qIndex + 1}</span>
+            ${builderQuestionsList.length > 1 ? `
+              <button type="button" onclick="removeQuestionFieldFromBuilder(${qIndex})" class="text-rose-500 hover:text-rose-700 text-xs font-bold">
+                <i class="fa-solid fa-trash"></i> Remove
+              </button>
+            ` : ''}
+          </div>
+          <div>
+            <label class="font-bold text-slate-700 block mb-1">Question Statement</label>
+            <input type="text" value="${escapeHtml(q.text)}" oninput="updateBuilderQuestionText(${qIndex}, this.value)" required placeholder="e.g. Which algorithm handles routing?" class="w-full bg-white border border-slate-300 rounded-xl p-2 font-medium">
+          </div>
+          <div>
+            <label class="font-bold text-slate-700 block mb-1">Options & Select Correct Answer (Radio)</label>
+            <div class="space-y-2">
+              ${[0, 1, 2, 3].map(optIdx => `
+                <div class="flex items-center gap-2">
+                  <input type="radio" name="correctOptRadio_${qIndex}" value="${optIdx}" ${q.correctAnswer === optIdx ? 'checked' : ''} onchange="updateBuilderCorrectAnswer(${qIndex}, ${optIdx})" class="text-brand-600 focus:ring-brand-500">
+                  <span class="font-bold text-slate-500 w-4">${String.fromCharCode(65 + optIdx)}</span>
+                  <input type="text" value="${escapeHtml(q.options[optIdx] || '')}" oninput="updateBuilderOptionText(${qIndex}, ${optIdx}, this.value)" required placeholder="Option ${String.fromCharCode(65 + optIdx)}" class="flex-1 bg-white border border-slate-300 rounded-xl p-1.5 text-xs">
+                </div>
+              `).join('')}
+            </div>
+          </div>
+          <div>
+            <label class="font-bold text-slate-700 block mb-1">Explanation / Solution Rationale</label>
+            <input type="text" value="${escapeHtml(q.explanation || '')}" oninput="updateBuilderExplanation(${qIndex}, this.value)" placeholder="Explain why the answer is correct..." class="w-full bg-white border border-slate-300 rounded-xl p-2 text-xs">
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function addQuestionFieldToBuilder() {
+      builderQuestionsList.push({
+        id: "BQ-" + Date.now(),
+        text: "",
+        options: ["", "", "", ""],
+        correctAnswer: 0,
+        explanation: ""
+      });
+      renderQuestionFieldsInBuilder();
+    }
+
+    function removeQuestionFieldFromBuilder(index) {
+      if (builderQuestionsList.length <= 1) return;
+      builderQuestionsList.splice(index, 1);
+      renderQuestionFieldsInBuilder();
+    }
+
+    function updateBuilderQuestionText(idx, val) { builderQuestionsList[idx].text = val; }
+    function updateBuilderOptionText(qIdx, optIdx, val) { builderQuestionsList[qIdx].options[optIdx] = val; }
+    function updateBuilderCorrectAnswer(qIdx, optIdx) { builderQuestionsList[qIdx].correctAnswer = optIdx; }
+    function updateBuilderExplanation(qIdx, val) { builderQuestionsList[qIdx].explanation = val; }
+
+    function handleSaveCreatedQuiz() {
+      const courseId = document.getElementById("quizCourseSelect").value;
+      const title = document.getElementById("quizTitleInput").value.trim();
+      const desc = document.getElementById("quizDescInput").value.trim();
+      const duration = parseInt(document.getElementById("quizDurationInput").value, 10);
+      const passingScore = parseInt(document.getElementById("quizPassingScoreInput").value, 10);
+
+      if (!title) {
+        showToast("Please provide a Quiz Title", "error");
+        return;
+      }
+      if (!duration || duration < 1) {
+        showToast("Duration must be at least 1 minute", "error");
+        return;
+      }
+
+      // Validate questions
+      for (let i = 0; i < builderQuestionsList.length; i++) {
+        const q = builderQuestionsList[i];
+        if (!q.text.trim()) {
+          showToast(`Question ${i + 1} statement is empty`, "error");
+          return;
+        }
+        for (let j = 0; j < 4; j++) {
+          if (!q.options[j] || !q.options[j].trim()) {
+            showToast(`Question ${i + 1} Option ${String.fromCharCode(65 + j)} is required`, "error");
+            return;
+          }
+        }
+      }
+
+      const course = appData.courses.find(c => c.id === courseId);
+
+      const newQuiz = {
+        id: "QZ-" + Date.now(),
+        courseId: courseId,
+        courseTitle: course ? course.title : "Course",
+        title: title,
+        description: desc,
+        timeLimitMinutes: duration,
+        passingScore: passingScore || 60,
+        questions: JSON.parse(JSON.stringify(builderQuestionsList))
+      };
+
+      appData.quizzes.push(newQuiz);
+      saveState();
+      closeModal("modalCreateQuiz");
+      showToast("Timed Quiz published successfully!", "success");
+      renderFacultyQuizzes();
+      renderFacultyDashboard();
+    }
+
+    function deleteQuiz(quizId) {
+      if (confirm("Permanently delete this quiz and its question banks?")) {
+        appData.quizzes = appData.quizzes.filter(q => q.id !== quizId);
+        saveState();
+        showToast("Quiz removed", "info");
+        renderFacultyQuizzes();
+        renderFacultyDashboard();
+      }
+    }
+
+    /**
+     * STUDENT PERFORMANCE & EXPORT SCORES (FACULTY)
+     */
+    function renderFacultyScoresView() {
+      // Populate course filter
+      const courseFilter = document.getElementById("filterScoreCourse");
+      const currentVal = courseFilter.value;
+      courseFilter.innerHTML = `<option value="ALL">All Courses</option>` + appData.courses.map(c => `
+        <option value="${c.id}" ${currentVal === c.id ? 'selected' : ''}>${c.code} - ${c.title}</option>
+      `).join('');
+
+      // Populate quiz filter
+      const quizFilter = document.getElementById("filterScoreQuiz");
+      const currentQuizVal = quizFilter.value;
+      quizFilter.innerHTML = `<option value="ALL">All Quizzes</option>` + appData.quizzes.map(q => `
+        <option value="${q.id}" ${currentQuizVal === q.id ? 'selected' : ''}>${q.title}</option>
+      `).join('');
+
+      renderFacultyScoresTable();
+    }
+
+    function renderFacultyScoresTable() {
+      const courseVal = document.getElementById("filterScoreCourse").value;
+      const quizVal = document.getElementById("filterScoreQuiz").value;
+      const searchVal = document.getElementById("searchScoreStudent").value.toLowerCase().trim();
+
+      let subs = appData.submissions || [];
+
+      if (courseVal !== "ALL") {
+        subs = subs.filter(s => s.courseId === courseVal);
+      }
+      if (quizVal !== "ALL") {
+        subs = subs.filter(s => s.quizId === quizVal);
+      }
+      if (searchVal) {
+        subs = subs.filter(s => 
+          (s.studentName && s.studentName.toLowerCase().includes(searchVal)) ||
+          (s.studentEmail && s.studentEmail.toLowerCase().includes(searchVal))
+        );
+      }
+
+      const tbody = document.getElementById("scoresTableBody");
+      const emptyState = document.getElementById("scoresEmptyState");
+
+      if (subs.length === 0) {
+        tbody.innerHTML = "";
+        emptyState.classList.remove("hidden");
+        return;
+      }
+
+      emptyState.classList.add("hidden");
+      tbody.innerHTML = subs.map(s => {
+        const timeFormatted = formatSecondsToMMSS(s.timeTakenSeconds || 0);
+
+        return `
+          <tr class="hover:bg-slate-50/80 transition">
+            <td class="py-3 px-4">
+              <div class="font-bold text-slate-800">${escapeHtml(s.studentName)}</div>
+              <div class="text-[10px] text-slate-400">${escapeHtml(s.studentEmail)}</div>
+            </td>
+            <td class="py-3 px-4 font-semibold text-slate-600 truncate max-w-xs">
+              ${escapeHtml(s.courseTitle || s.courseId)}
+            </td>
+            <td class="py-3 px-4 font-semibold text-slate-800">
+              ${escapeHtml(s.quizTitle)}
+            </td>
+            <td class="py-3 px-4 text-center font-bold text-slate-800">
+              ${s.score} / ${s.total}
+            </td>
+            <td class="py-3 px-4 text-center font-extrabold text-brand-600">
+              ${s.percentage}%
+            </td>
+            <td class="py-3 px-4 text-center">
+              <span class="inline-block px-2.5 py-0.5 rounded-full text-[10px] font-extrabold ${s.passed ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}">
+                ${s.passed ? 'PASSED' : 'FAILED'}
+              </span>
+            </td>
+            <td class="py-3 px-4 text-center">
+              ${s.autoSubmitted ? `
+                <span class="inline-flex items-center gap-1 text-[10px] font-bold text-rose-600 bg-rose-50 px-2 py-0.5 rounded border border-rose-200">
+                  <i class="fa-solid fa-stopwatch"></i> Timeout Auto-Submit
+                </span>
+              ` : `
+                <span class="inline-flex items-center gap-1 text-[10px] font-bold text-slate-600 bg-slate-100 px-2 py-0.5 rounded">
+                  <i class="fa-solid fa-check"></i> Manual (${timeFormatted})
+                </span>
+              `}
+            </td>
+            <td class="py-3 px-4 text-right text-slate-400 font-mono text-[11px]">
+              ${s.submittedAt}
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function exportScoresToCSV() {
+      if (!appData.submissions || appData.submissions.length === 0) {
+        showToast("No submission records available to export", "info");
+        return;
+      }
+
+      const headers = ["Submission ID", "Student Name", "Student Email", "Course Title", "Quiz Title", "Score", "Total", "Percentage", "Outcome", "Submission Mode", "Time Taken (Sec)", "Timestamp"];
+      
+      const rows = appData.submissions.map(s => [
+        s.id,
+        `"${(s.studentName || '').replace(/"/g, '""')}"`,
+        `"${(s.studentEmail || '').replace(/"/g, '""')}"`,
+        `"${(s.courseTitle || '').replace(/"/g, '""')}"`,
+        `"${(s.quizTitle || '').replace(/"/g, '""')}"`,
+        s.score,
+        s.total,
+        `${s.percentage}%`,
+        s.passed ? "PASSED" : "FAILED",
+        s.autoSubmitted ? "TIMEOUT_AUTO_SUBMIT" : "MANUAL_SUBMISSION",
+        s.timeTakenSeconds || 0,
+        `"${s.submittedAt || ''}"`
+      ]);
+
+      const csvContent = "\uFEFF" + [headers.join(","), ...rows.map(r => r.join(","))].join("\r\n");
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = `EduPortal_Student_Scores_${new Date().toISOString().split('T')[0]}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      showToast("Results exported to CSV successfully!", "success");
+    }
+
+    /**
+     * =========================================================================
+     * STUDENT PORTAL: ENROLLMENT, MATERIALS & TIMED QUIZ RUNNER
+     * =========================================================================
+     */
+
+    function renderStudentCatalog() {
+      const container = document.getElementById("studentCatalogGrid");
+      const category = document.getElementById("catalogCategoryFilter").value;
+      const search = document.getElementById("catalogSearchInput").value.toLowerCase().trim();
+
+      let list = appData.courses;
+
+      if (category !== "ALL") {
+        list = list.filter(c => c.category === category);
+      }
+      if (search) {
+        list = list.filter(c => 
+          c.title.toLowerCase().includes(search) || 
+          c.code.toLowerCase().includes(search) ||
+          c.description.toLowerCase().includes(search)
+        );
+      }
+
+      if (list.length === 0) {
+        container.innerHTML = `<div class="col-span-full py-12 text-center text-slate-400">No courses match the chosen filter.</div>`;
+        return;
+      }
+
+      const enrolledIds = (appData.enrollments || [])
+        .filter(e => e.studentId === appData.currentUser.id)
+        .map(e => e.courseId);
+
+      container.innerHTML = list.map(c => {
+        const isEnrolled = enrolledIds.includes(c.id);
+
+        return `
+          <div class="bg-white rounded-3xl border border-slate-200/90 shadow-xs hover:shadow-lg transition-all overflow-hidden flex flex-col justify-between">
+            <div class="h-32 bg-gradient-to-br ${c.color || 'from-blue-600 to-indigo-700'} p-5 text-white flex flex-col justify-between relative overflow-hidden">
+              <div class="flex items-center justify-between z-10">
+                <span class="px-2 py-0.5 rounded bg-white/20 backdrop-blur-md text-[10px] font-extrabold uppercase tracking-wider">
+                  ${escapeHtml(c.code)}
+                </span>
+                <span class="text-xs font-semibold text-white/90">${escapeHtml(c.category)}</span>
+              </div>
+              <h3 class="font-display font-bold text-base z-10 leading-snug line-clamp-2">${escapeHtml(c.title)}</h3>
+            </div>
+
+            <div class="p-5 flex-1 flex flex-col justify-between space-y-4">
+              <p class="text-xs text-slate-500 leading-relaxed line-clamp-3">${escapeHtml(c.description)}</p>
+
+              <div class="flex items-center justify-between text-xs text-slate-400 pt-3 border-t border-slate-100">
+                <span><i class="fa-solid fa-folder-tree text-brand-500 mr-1"></i> ${c.units.length} Units</span>
+                <span><i class="fa-solid fa-stopwatch text-indigo-500 mr-1"></i> ${getQuizCountForCourse(c.id)} Quizzes</span>
+              </div>
+
+              <div>
+                ${isEnrolled ? `
+                  <button onclick="openStudentCourseLearningView('${c.id}')" class="w-full py-2.5 rounded-xl bg-emerald-50 text-emerald-700 hover:bg-emerald-100 font-bold text-xs transition flex items-center justify-center gap-1.5 border border-emerald-200">
+                    <i class="fa-solid fa-circle-check"></i> Enrolled • Open Course
+                  </button>
+                ` : `
+                  <button onclick="enrolInCourse('${c.id}')" class="w-full py-2.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-bold text-xs transition shadow-sm flex items-center justify-center gap-1.5">
+                    <i class="fa-solid fa-plus"></i> Enrol in Course
+                  </button>
+                `}
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function enrolInCourse(courseId) {
+      if (appData.currentUser.role !== 'student') {
+        showToast("Switch to Student profile to enrol in courses", "info");
+        return;
+      }
+
+      if (!appData.enrollments) appData.enrollments = [];
+
+      const exists = appData.enrollments.some(e => e.studentId === appData.currentUser.id && e.courseId === courseId);
+      if (!exists) {
+        appData.enrollments.push({
+          studentId: appData.currentUser.id,
+          courseId: courseId,
+          enrolledAt: new Date().toISOString().split('T')[0],
+          progressPercent: 10
+        });
+        saveState();
+        showToast("Enrolled in course successfully!", "success");
+      }
+      renderStudentCatalog();
+    }
+
+    function renderStudentEnrolled() {
+      const container = document.getElementById("studentEnrolledGrid");
+      const userEnrollments = (appData.enrollments || []).filter(e => e.studentId === appData.currentUser.id);
+
+      if (userEnrollments.length === 0) {
+        container.innerHTML = `
+          <div class="col-span-full py-12 text-center text-slate-400 bg-white rounded-3xl border border-dashed border-slate-300">
+            <i class="fa-solid fa-book-reader text-4xl mb-3 text-slate-300"></i>
+            <h4 class="font-bold text-slate-700">No Enrolled Courses</h4>
+            <p class="text-xs text-slate-400 mt-1 mb-4">You have not enrolled in any programs yet.</p>
+            <button onclick="navigateTo('view-student-catalog')" class="px-4 py-2 bg-brand-600 text-white rounded-xl text-xs font-bold hover:bg-brand-700">Browse Catalog</button>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = userEnrollments.map(e => {
+        const course = appData.courses.find(c => c.id === e.courseId);
+        if (!course) return '';
+
+        return `
+          <div class="bg-white rounded-3xl border border-slate-200/90 shadow-xs hover:shadow-md transition p-6 flex flex-col justify-between space-y-4">
+            <div>
+              <div class="flex items-center justify-between gap-2 mb-2">
+                <span class="px-2.5 py-1 rounded-lg bg-brand-50 text-brand-700 font-extrabold text-[11px] uppercase tracking-wide">
+                  ${escapeHtml(course.code)}
+                </span>
+                <span class="text-xs text-slate-400">Enrolled: ${e.enrolledAt}</span>
+              </div>
+              <h3 class="font-display font-bold text-base text-slate-900 leading-snug mb-1">${escapeHtml(course.title)}</h3>
+              <p class="text-xs text-slate-500 line-clamp-2">${escapeHtml(course.description)}</p>
+            </div>
+
+            <!-- Material Counts -->
+            <div class="flex items-center justify-between text-xs text-slate-500 font-medium py-3 border-y border-slate-100">
+              <span><i class="fa-solid fa-folder-tree text-brand-500 mr-1"></i> ${course.units.length} Units</span>
+              <span><i class="fa-solid fa-file-pdf text-rose-500 mr-1"></i> ${getPdfCount(course)} PDFs</span>
+              <span><i class="fa-solid fa-circle-play text-red-500 mr-1"></i> ${getVideoCount(course)} Lectures</span>
+            </div>
+
+            <div class="flex items-center gap-3">
+              <button onclick="openStudentCourseLearningView('${course.id}')" class="flex-1 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-bold text-xs transition shadow-sm flex items-center justify-center gap-2">
+                <i class="fa-solid fa-arrow-right-to-bracket"></i> Continue Course
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    /**
+     * STUDENT COURSE HUB: MATERIALS & QUIZZES
+     */
+    let activeStudentCourseId = null;
+
+    function openStudentCourseLearningView(courseId) {
+      activeStudentCourseId = courseId;
+      const course = appData.courses.find(c => c.id === courseId);
+      if (!course) return;
+
+      // Render Header
+      document.getElementById("studentCourseHeaderCard").innerHTML = `
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <div class="flex items-center gap-2 mb-2">
+              <span class="px-2.5 py-0.5 rounded bg-brand-50 text-brand-700 text-xs font-extrabold uppercase">${escapeHtml(course.code)}</span>
+              <span class="text-xs font-semibold text-slate-400">${escapeHtml(course.category)}</span>
+            </div>
+            <h1 class="font-display font-bold text-2xl text-slate-900">${escapeHtml(course.title)}</h1>
+            <p class="text-xs text-slate-500 mt-1 max-w-2xl">${escapeHtml(course.description)}</p>
+          </div>
+          <button onclick="navigateTo('view-student-enrolled')" class="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition self-start sm:self-center">
+            Back to Courses
+          </button>
+        </div>
+      `;
+
+      renderStudentCourseMaterialsTab(course);
+      renderStudentCourseQuizzesTab(course);
+
+      switchStudentCourseTab('materials');
+      navigateTo('view-student-course-materials');
+    }
+
+    function switchStudentCourseTab(tab) {
+      const matTab = document.getElementById("studentStudyMaterialsTab");
+      const quizTab = document.getElementById("studentQuizzesTab");
+      const btnMat = document.getElementById("tabBtnMaterials");
+      const btnQuiz = document.getElementById("tabBtnQuizzes");
+
+      if (tab === 'materials') {
+        matTab.classList.remove("hidden");
+        quizTab.classList.add("hidden");
+        btnMat.className = "pb-3 text-brand-600 border-b-2 border-brand-600 flex items-center gap-2";
+        btnQuiz.className = "pb-3 text-slate-400 hover:text-slate-700 flex items-center gap-2 border-b-2 border-transparent";
+      } else {
+        matTab.classList.add("hidden");
+        quizTab.classList.remove("hidden");
+        btnQuiz.className = "pb-3 text-brand-600 border-b-2 border-brand-600 flex items-center gap-2";
+        btnMat.className = "pb-3 text-slate-400 hover:text-slate-700 flex items-center gap-2 border-b-2 border-transparent";
+      }
+    }
+
+    function renderStudentCourseMaterialsTab(course) {
+      const container = document.getElementById("studentStudyMaterialsTab");
+      if (!course.units || course.units.length === 0) {
+        container.innerHTML = `<div class="p-8 text-center text-slate-400">No study units uploaded yet for this course.</div>`;
+        return;
+      }
+
+      container.innerHTML = course.units.map((unit, idx) => `
+        <div class="bg-white rounded-3xl border border-slate-200/90 shadow-xs overflow-hidden">
+          <div class="p-4 sm:p-5 bg-slate-50/70 border-b border-slate-100 flex items-center gap-3">
+            <span class="w-8 h-8 rounded-lg bg-brand-100 text-brand-700 font-extrabold text-xs flex items-center justify-center">
+              ${idx + 1}
+            </span>
+            <h3 class="font-display font-bold text-sm text-slate-800">${escapeHtml(unit.title)}</h3>
+          </div>
+          <div class="p-5">
+            ${unit.materials.length === 0 ? `
+              <div class="text-xs text-slate-400 italic py-2">No study materials in this unit yet.</div>
+            ` : `
+              <div class="space-y-3">
+                ${unit.materials.map(m => `
+                  <div class="flex flex-col sm:flex-row sm:items-center justify-between p-3.5 rounded-2xl border border-slate-100 hover:border-slate-200 bg-white hover:bg-slate-50 transition gap-3">
+                    <div class="flex items-center gap-3">
+                      <div class="w-10 h-10 rounded-xl flex items-center justify-center text-base font-bold ${m.type === 'pdf' ? 'bg-rose-50 text-rose-600' : 'bg-red-50 text-red-600'}">
+                        <i class="fa-solid ${m.type === 'pdf' ? 'fa-file-pdf' : 'fa-circle-play'}"></i>
+                      </div>
+                      <div>
+                        <h4 class="font-bold text-slate-800 text-xs sm:text-sm">${escapeHtml(m.title)}</h4>
+                        <div class="flex items-center gap-2 text-[10px] text-slate-400 uppercase font-semibold mt-0.5">
+                          <span>${m.type === 'pdf' ? 'PDF Study Guide' : 'Video Lesson'}</span>
+                          ${m.size ? `<span>• ${m.size}</span>` : ''}
+                          ${m.duration ? `<span>• ${m.duration}</span>` : ''}
+                        </div>
+                      </div>
+                    </div>
+                    <div class="flex items-center gap-2 self-end sm:self-center">
+                      <button onclick="previewMaterial('${m.title}', '${m.type}', '${m.url}')" class="px-3.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition flex items-center gap-1.5">
+                        <i class="fa-regular fa-eye"></i> View Online
+                      </button>
+                      <button onclick="downloadMaterialFile('${m.title}', '${m.type}')" class="px-3.5 py-1.5 rounded-xl bg-brand-50 hover:bg-brand-100 text-brand-700 font-bold text-xs transition flex items-center gap-1.5">
+                        <i class="fa-solid fa-download"></i> Download
+                      </button>
+                    </div>
+                  </div>
+                `).join('')}
+              </div>
+            `}
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function renderStudentCourseQuizzesTab(course) {
+      const container = document.getElementById("studentQuizzesTab");
+      const quizzes = appData.quizzes.filter(q => q.courseId === course.id);
+
+      if (quizzes.length === 0) {
+        container.innerHTML = `
+          <div class="p-8 text-center text-slate-400 bg-white rounded-3xl border border-slate-200">
+            <i class="fa-solid fa-stopwatch text-4xl mb-2 text-slate-300"></i>
+            <h4 class="font-bold text-slate-700">No Quizzes Active</h4>
+            <p class="text-xs text-slate-400 mt-1">Faculty has not published any timed assessments for this course yet.</p>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = quizzes.map(q => {
+        // Check if student took it before
+        const past = (appData.submissions || []).find(s => s.quizId === q.id && s.studentId === appData.currentUser.id);
+
+        return `
+          <div class="bg-white rounded-3xl border border-slate-200/90 shadow-xs p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div class="space-y-1.5">
+              <div class="flex items-center gap-2">
+                <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md bg-amber-50 text-amber-700 font-extrabold text-[11px]">
+                  <i class="fa-solid fa-stopwatch"></i> ${q.timeLimitMinutes} Minutes Timed
+                </span>
+                <span class="text-xs text-slate-400 font-semibold">${q.questions.length} Questions</span>
+              </div>
+              <h3 class="font-display font-bold text-base text-slate-900">${escapeHtml(q.title)}</h3>
+              <p class="text-xs text-slate-500 max-w-xl">${escapeHtml(q.description)}</p>
+              ${past ? `
+                <div class="pt-2 text-xs font-bold text-emerald-600 flex items-center gap-1.5">
+                  <i class="fa-solid fa-circle-check"></i> Latest Score: ${past.score}/${past.total} (${past.percentage}%) • ${past.passed ? 'PASSED' : 'FAILED'}
+                </div>
+              ` : ''}
+            </div>
+
+            <button onclick="startTimedQuiz('${q.id}')" class="px-5 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-bold text-xs transition shadow-sm flex items-center justify-center gap-2 flex-shrink-0">
+              <i class="fa-solid fa-play"></i> ${past ? 'Retake Quiz' : 'Start Timed Quiz'}
+            </button>
+          </div>
+        `;
+      }).join('');
+    }
+
+    /**
+     * =========================================================================
+     * JAVASCRIPT COUNTDOWN TIMER & TIMED QUIZ RUNNER ENGINE
+     * =========================================================================
+     */
+
+    function startTimedQuiz(quizId) {
+      const quiz = appData.quizzes.find(q => q.id === quizId);
+      if (!quiz) {
+        showToast("Quiz not found", "error");
+        return;
+      }
+
+      const totalSeconds = quiz.timeLimitMinutes * 60;
+
+      activeQuizSession = {
+        quizId: quiz.id,
+        courseId: quiz.courseId,
+        courseTitle: quiz.courseTitle || "Course",
+        title: quiz.title,
+        questions: quiz.questions,
+        passingScore: quiz.passingScore || 60,
+        totalSeconds: totalSeconds,
+        remainingSeconds: totalSeconds,
+        userAnswers: {}, // { 'Q-1': 0, 'Q-2': 1 }
+        flaggedQuestions: new Set(),
+        startTime: Date.now()
+      };
+
+      currentQuizQuestionIndex = 0;
+
+      // Populate Header
+      document.getElementById("quizRunnerCourseCode").textContent = quiz.courseId;
+      document.getElementById("quizRunnerTitle").textContent = quiz.title;
+      document.getElementById("totalQuestionsCount").textContent = quiz.questions.length;
+
+      // Switch to quiz runner view
+      navigateTo('view-student-quiz-runner');
+
+      // Initialize Timer Display & Progress
+      updateTimerDisplay(totalSeconds, totalSeconds);
+
+      // Start the core JavaScript interval countdown timer
+      if (quizCountdownTimer) clearInterval(quizCountdownTimer);
+
+      quizCountdownTimer = setInterval(() => {
+        activeQuizSession.remainingSeconds--;
+
+        updateTimerDisplay(activeQuizSession.remainingSeconds, activeQuizSession.totalSeconds);
+
+        // AUTO-SUBMISSION ON TIMEOUT
+        if (activeQuizSession.remainingSeconds <= 0) {
+          clearInterval(quizCountdownTimer);
+          quizCountdownTimer = null;
+          handleAutoSubmitOnTimeout();
+        }
+      }, 1000);
+
+      // Render the first question and palette
+      renderActiveQuizQuestion();
+      renderQuizQuestionPalette();
+      showToast(`Quiz started! Countdown timer running: ${quiz.timeLimitMinutes} minutes`, "info");
+    }
+
+    function updateTimerDisplay(remainingSec, totalSec) {
+      const display = document.getElementById("quizTimeRemainingDisplay");
+      const wrapper = document.getElementById("quizTimerWrapper");
+      const progressBar = document.getElementById("quizTimerProgressBar");
+
+      const minutes = Math.floor(Math.max(0, remainingSec) / 60);
+      const seconds = Math.max(0, remainingSec) % 60;
+      const formatted = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+
+      if (display) display.textContent = formatted;
+
+      // Progress bar percentage
+      const percent = Math.max(0, Math.min(100, (remainingSec / totalSec) * 100));
+      if (progressBar) progressBar.style.width = `${percent}%`;
+
+      // Warning color shifts and pulsating effect when under 30s
+      if (wrapper) {
+        if (remainingSec <= 15) {
+          wrapper.className = "flex items-center gap-2 px-4 py-2 rounded-xl bg-rose-600 text-white font-mono font-bold text-lg shadow-lg timer-critical";
+          if (progressBar) progressBar.className = "h-full bg-rose-600 transition-all duration-1000 ease-linear rounded-full";
+        } else if (remainingSec <= 45) {
+          wrapper.className = "flex items-center gap-2 px-4 py-2 rounded-xl bg-amber-600 text-white font-mono font-bold text-lg shadow-md";
+          if (progressBar) progressBar.className = "h-full bg-amber-500 transition-all duration-1000 ease-linear rounded-full";
+        } else {
+          wrapper.className = "flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-900 text-white font-mono font-bold text-lg shadow-md";
+          if (progressBar) progressBar.className = "h-full bg-brand-600 transition-all duration-1000 ease-linear rounded-full";
+        }
+      }
+    }
+
+    /**
+     * AUTO-SUBMIT HANDLER WHEN COUNTDOWN EXPIRES
+     */
+    function handleAutoSubmitOnTimeout() {
+      if (!activeQuizSession) return;
+
+      // Visual Alert for student
+      showToast("⏳ Time expired! Auto-submitting quiz responses now...", "error");
+
+      // Execute auto submission
+      executeQuizSubmission(true);
+    }
+
+    function renderActiveQuizQuestion() {
+      if (!activeQuizSession) return;
+
+      const q = activeQuizSession.questions[currentQuizQuestionIndex];
+      if (!q) return;
+
+      document.getElementById("currentQuestionNum").textContent = currentQuizQuestionIndex + 1;
+      document.getElementById("quizQuestionText").textContent = q.text;
+
+      // Update Flag button state
+      const flagBtn = document.getElementById("flagQuestionBtn");
+      const isFlagged = activeQuizSession.flaggedQuestions.has(q.id);
+      if (isFlagged) {
+        flagBtn.className = "px-3 py-1 rounded-lg text-xs font-semibold bg-amber-50 border border-amber-300 text-amber-700 transition flex items-center gap-1.5";
+        flagBtn.innerHTML = `<i class="fa-solid fa-flag text-amber-600"></i> Flagged`;
+      } else {
+        flagBtn.className = "px-3 py-1 rounded-lg text-xs font-semibold text-slate-500 hover:bg-slate-100 border border-slate-200 transition flex items-center gap-1.5";
+        flagBtn.innerHTML = `<i class="fa-regular fa-flag"></i> Flag for Review`;
+      }
+
+      // Render Options
+      const selectedOptionIndex = activeQuizSession.userAnswers[q.id];
+      const container = document.getElementById("quizOptionsContainer");
+
+      container.innerHTML = q.options.map((optText, optIdx) => {
+        const isSelected = selectedOptionIndex === optIdx;
+
+        return `
+          <label class="flex items-center gap-3 p-4 rounded-2xl border-2 transition cursor-pointer ${isSelected ? 'border-brand-600 bg-brand-50/70 shadow-xs' : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50'}">
+            <input type="radio" name="activeQuizOption" value="${optIdx}" ${isSelected ? 'checked' : ''} onchange="selectQuizOption('${q.id}', ${optIdx})" class="w-4 h-4 text-brand-600 focus:ring-brand-500">
+            <span class="w-7 h-7 rounded-xl flex items-center justify-center font-bold text-xs ${isSelected ? 'bg-brand-600 text-white' : 'bg-slate-100 text-slate-600'}">
+              ${String.fromCharCode(65 + optIdx)}
+            </span>
+            <span class="font-semibold text-sm text-slate-800">${escapeHtml(optText)}</span>
+          </label>
+        `;
+      }).join('');
+
+      // Update Prev / Next Buttons
+      document.getElementById("prevQuestionBtn").disabled = currentQuizQuestionIndex === 0;
+      const nextBtn = document.getElementById("nextQuestionBtn");
+      if (currentQuizQuestionIndex === activeQuizSession.questions.length - 1) {
+        nextBtn.innerHTML = `Finish Review <i class="fa-solid fa-check"></i>`;
+      } else {
+        nextBtn.innerHTML = `Next <i class="fa-solid fa-arrow-right"></i>`;
+      }
+
+      renderQuizQuestionPalette();
+    }
+
+    function selectQuizOption(questionId, optIndex) {
+      if (!activeQuizSession) return;
+      activeQuizSession.userAnswers[questionId] = optIndex;
+      renderActiveQuizQuestion();
+      renderQuizQuestionPalette();
+    }
+
+    function toggleFlagCurrentQuestion() {
+      if (!activeQuizSession) return;
+      const q = activeQuizSession.questions[currentQuizQuestionIndex];
+      if (activeQuizSession.flaggedQuestions.has(q.id)) {
+        activeQuizSession.flaggedQuestions.delete(q.id);
+      } else {
+        activeQuizSession.flaggedQuestions.add(q.id);
+      }
+      renderActiveQuizQuestion();
+    }
+
+    function nextQuestion() {
+      if (!activeQuizSession) return;
+      if (currentQuizQuestionIndex < activeQuizSession.questions.length - 1) {
+        currentQuizQuestionIndex++;
+        renderActiveQuizQuestion();
+      } else {
+        confirmSubmitQuiz(false);
+      }
+    }
+
+    function prevQuestion() {
+      if (!activeQuizSession) return;
+      if (currentQuizQuestionIndex > 0) {
+        currentQuizQuestionIndex--;
+        renderActiveQuizQuestion();
+      }
+    }
+
+    function jumpToQuestion(index) {
+      if (!activeQuizSession) return;
+      currentQuizQuestionIndex = index;
+      renderActiveQuizQuestion();
+    }
+
+    function renderQuizQuestionPalette() {
+      if (!activeQuizSession) return;
+      const container = document.getElementById("questionPaletteGrid");
+
+      container.innerHTML = activeQuizSession.questions.map((q, idx) => {
+        const isCurrent = idx === currentQuizQuestionIndex;
+        const isAnswered = activeQuizSession.userAnswers[q.id] !== undefined;
+        const isFlagged = activeQuizSession.flaggedQuestions.has(q.id);
+
+        let styleClass = "bg-slate-100 text-slate-600 border border-slate-200";
+
+        if (isAnswered) {
+          styleClass = "bg-emerald-500 text-white font-bold";
+        }
+        if (isFlagged) {
+          styleClass = "bg-amber-400 text-amber-950 font-bold";
+        }
+        if (isCurrent) {
+          styleClass += " ring-2 ring-brand-600 ring-offset-2";
+        }
+
+        return `
+          <button onclick="jumpToQuestion(${idx})" class="w-9 h-9 rounded-xl text-xs flex items-center justify-center font-bold transition ${styleClass}">
+            ${idx + 1}
+          </button>
+        `;
+      }).join('');
+    }
+
+    function confirmSubmitQuiz(isTimeout) {
+      if (isTimeout) {
+        executeQuizSubmission(true);
+        return;
+      }
+
+      if (!activeQuizSession) return;
+
+      const answeredCount = Object.keys(activeQuizSession.userAnswers).length;
+      const totalCount = activeQuizSession.questions.length;
+      const remainingTime = formatSecondsToMMSS(activeQuizSession.remainingSeconds);
+
+      document.getElementById("submitConfirmStats").textContent = `You have answered ${answeredCount} of ${totalCount} questions. Remaining time: ${remainingTime}.`;
+      openModal("modalConfirmSubmit");
+    }
+
+    /**
+     * EVALUATION & RESULT GENERATION
+     */
+    function executeQuizSubmission(isAutoSubmit) {
+      if (quizCountdownTimer) {
+        clearInterval(quizCountdownTimer);
+        quizCountdownTimer = null;
+      }
+      closeModal("modalConfirmSubmit");
+
+      if (!activeQuizSession) return;
+
+      const timeTakenSec = activeQuizSession.totalSeconds - Math.max(0, activeQuizSession.remainingSeconds);
+
+      // Evaluate Score
+      let correctCount = 0;
+      activeQuizSession.questions.forEach(q => {
+        const userChoice = activeQuizSession.userAnswers[q.id];
+        if (userChoice !== undefined && userChoice === q.correctAnswer) {
+          correctCount++;
+        }
+      });
+
+      const totalQuestions = activeQuizSession.questions.length;
+      const percentage = Math.round((correctCount / totalQuestions) * 100);
+      const passed = percentage >= activeQuizSession.passingScore;
+
+      // Construct official submission record
+      const submissionRecord = {
+        id: "SUB-" + Date.now(),
+        quizId: activeQuizSession.quizId,
+        courseId: activeQuizSession.courseId,
+        courseTitle: activeQuizSession.courseTitle,
+        quizTitle: activeQuizSession.title,
+        studentId: appData.currentUser.id,
+        studentName: appData.currentUser.name,
+        studentEmail: appData.currentUser.email,
+        score: correctCount,
+        total: totalQuestions,
+        percentage: percentage,
+        passed: passed,
+        timeTakenSeconds: timeTakenSec,
+        autoSubmitted: isAutoSubmit,
+        submittedAt: new Date().toLocaleString(),
+        answers: JSON.parse(JSON.stringify(activeQuizSession.userAnswers))
+      };
+
+      if (!appData.submissions) appData.submissions = [];
+      appData.submissions.push(submissionRecord);
+      saveState();
+
+      // Render Results Screen
+      renderQuizResultsScreen(activeQuizSession, submissionRecord);
+
+      // Clear active session
+      activeQuizSession = null;
+
+      // Confetti celebration if passed!
+      if (passed && typeof confetti === 'function') {
+        confetti({
+          particleCount: 100,
+          spread: 70,
+          origin: { y: 0.6 }
+        });
+      }
+    }
+
+    function renderQuizResultsScreen(session, record) {
+      navigateTo('view-student-quiz-result');
+
+      const banner = document.getElementById("resultBannerCard");
+      const heading = document.getElementById("resultStatusHeading");
+      const icon = document.getElementById("resultStatusIcon");
+      const autoBadge = document.getElementById("resultAutoSubmittedBadge");
+
+      if (record.autoSubmitted) {
+        autoBadge.classList.remove("hidden");
+      } else {
+        autoBadge.classList.add("hidden");
+      }
+
+      if (record.passed) {
+        banner.className = "p-6 sm:p-8 rounded-3xl bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 text-white shadow-xl text-center space-y-3";
+        icon.innerHTML = `<i class="fa-solid fa-trophy"></i>`;
+        heading.textContent = "Congratulations! You Passed!";
+      } else {
+        banner.className = "p-6 sm:p-8 rounded-3xl bg-gradient-to-r from-rose-600 via-red-600 to-rose-700 text-white shadow-xl text-center space-y-3";
+        icon.innerHTML = `<i class="fa-solid fa-chart-line"></i>`;
+        heading.textContent = "Evaluation Complete (Passing Threshold: 60%)";
+      }
+
+      document.getElementById("resScoreValue").textContent = `${record.score} / ${record.total}`;
+      document.getElementById("resPercentValue").textContent = `${record.percentage}%`;
+      document.getElementById("resTimeTakenValue").textContent = formatSecondsToMMSS(record.timeTakenSeconds);
+      document.getElementById("resOutcomeValue").textContent = record.passed ? "PASSED" : "FAILED";
+      document.getElementById("resOutcomeValue").className = `text-2xl font-display font-extrabold ${record.passed ? 'text-emerald-600' : 'text-rose-600'}`;
+
+      // Detailed question by question breakdown
+      const breakdown = document.getElementById("resultQuestionsBreakdown");
+      breakdown.innerHTML = session.questions.map((q, idx) => {
+        const userChoice = record.answers[q.id];
+        const isCorrect = userChoice === q.correctAnswer;
+        const answered = userChoice !== undefined;
+
+        return `
+          <div class="p-5 rounded-2xl border-2 ${isCorrect ? 'border-emerald-200 bg-emerald-50/30' : 'border-rose-200 bg-rose-50/30'} space-y-3">
+            <div class="flex items-start justify-between gap-3">
+              <span class="font-display font-bold text-sm text-slate-800">
+                ${idx + 1}. ${escapeHtml(q.text)}
+              </span>
+              <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-extrabold ${isCorrect ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}">
+                <i class="fa-solid ${isCorrect ? 'fa-check' : 'fa-xmark'}"></i>
+                ${isCorrect ? 'Correct' : 'Incorrect'}
+              </span>
+            </div>
+
+            <!-- Options Breakdown -->
+            <div class="space-y-1.5 text-xs">
+              ${q.options.map((opt, optIdx) => {
+                let optStyle = "bg-white text-slate-700 border-slate-200";
+
+                if (optIdx === q.correctAnswer) {
+                  optStyle = "bg-emerald-100/80 border-emerald-400 text-emerald-900 font-bold";
+                } else if (optIdx === userChoice && !isCorrect) {
+                  optStyle = "bg-rose-100/80 border-rose-400 text-rose-900 font-bold line-through";
+                }
+
+                return `
+                  <div class="p-2.5 rounded-xl border flex items-center justify-between ${optStyle}">
+                    <span class="flex items-center gap-2">
+                      <span class="w-5 font-bold">${String.fromCharCode(65 + optIdx)}.</span>
+                      <span>${escapeHtml(opt)}</span>
+                    </span>
+                    ${optIdx === q.correctAnswer ? `
+                      <span class="text-[10px] font-extrabold uppercase text-emerald-700 flex items-center gap-1">
+                        <i class="fa-solid fa-check"></i> Correct Answer
+                      </span>
+                    ` : ''}
+                    ${optIdx === userChoice && !isCorrect ? `
+                      <span class="text-[10px] font-extrabold uppercase text-rose-700 flex items-center gap-1">
+                        <i class="fa-solid fa-xmark"></i> Your Choice
+                      </span>
+                    ` : ''}
+                  </div>
+                `;
+              }).join('')}
+            </div>
+
+            ${q.explanation ? `
+              <div class="p-3 bg-white/80 rounded-xl border border-slate-200 text-xs text-slate-600 leading-relaxed">
+                <strong class="text-slate-800"><i class="fa-regular fa-lightbulb text-amber-500 mr-1"></i> Solution Rationale:</strong>
+                ${escapeHtml(q.explanation)}
+              </div>
+            ` : ''}
+          </div>
+        `;
+      }).join('');
+    }
+
+    /**
+     * STUDENT PROGRESS VIEW
+     */
+    function renderStudentProgressView() {
+      const studentId = appData.currentUser.id;
+      const enrolled = (appData.enrollments || []).filter(e => e.studentId === studentId);
+      const studentSubs = (appData.submissions || []).filter(s => s.studentId === studentId);
+
+      document.getElementById("progCoursesEnrolledCount").textContent = enrolled.length;
+      document.getElementById("progQuizzesAttemptedCount").textContent = studentSubs.length;
+
+      let avg = 0;
+      if (studentSubs.length > 0) {
+        const sum = studentSubs.reduce((acc, s) => acc + s.percentage, 0);
+        avg = Math.round(sum / studentSubs.length);
+      }
+      document.getElementById("progAvgScorePercent").textContent = `${avg}%`;
+
+      const tbody = document.getElementById("studentHistoryTableBody");
+      const empty = document.getElementById("studentHistoryEmpty");
+
+      if (studentSubs.length === 0) {
+        tbody.innerHTML = "";
+        empty.classList.remove("hidden");
+        return;
+      }
+
+      empty.classList.add("hidden");
+      tbody.innerHTML = studentSubs.slice().reverse().map(s => `
+        <tr class="hover:bg-slate-50 transition">
+          <td class="py-3 px-4 font-semibold text-slate-800">${escapeHtml(s.courseTitle || s.courseId)}</td>
+          <td class="py-3 px-4 font-semibold text-slate-800">${escapeHtml(s.quizTitle)}</td>
+          <td class="py-3 px-4 text-center font-bold text-slate-800">${s.score} / ${s.total}</td>
+          <td class="py-3 px-4 text-center font-extrabold text-brand-600">${s.percentage}%</td>
+          <td class="py-3 px-4 text-center">
+            <span class="inline-block px-2.5 py-0.5 rounded-full text-[10px] font-extrabold ${s.passed ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}">
+              ${s.passed ? 'PASSED' : 'FAILED'}
+            </span>
+          </td>
+          <td class="py-3 px-4 text-center">
+            ${s.autoSubmitted ? `
+              <span class="text-[10px] text-rose-600 font-bold bg-rose-50 px-2 py-0.5 rounded">Timeout Auto-Submit</span>
+            ` : `
+              <span class="text-[10px] text-slate-600 bg-slate-100 px-2 py-0.5 rounded">Completed</span>
+            `}
+          </td>
+          <td class="py-3 px-4 text-right text-slate-400 font-mono text-[11px]">${s.submittedAt}</td>
+        </tr>
+      `).join('');
+    }
+
+    /**
+     * PROFILE FORM MANAGEMENT
+     */
+    function populateProfileForm() {
+      const u = appData.currentUser;
+      document.getElementById("profileCardName").textContent = u.name;
+      document.getElementById("profileCardAvatar").src = u.avatar;
+      document.getElementById("profileCardRoleBadge").textContent = u.role.toUpperCase();
+      document.getElementById("profileCardDept").textContent = u.department || "Institutional Department";
+
+      document.getElementById("profInputName").value = u.name;
+      document.getElementById("profInputEmail").value = u.email;
+      document.getElementById("profInputDept").value = u.department || "";
+      document.getElementById("profInputIdNum").value = u.idNumber || "";
+      document.getElementById("profInputAvatar").value = u.avatar;
+      document.getElementById("profInputBio").value = u.bio || "";
+    }
+
+    function handleSaveProfile(e) {
+      e.preventDefault();
+      const u = appData.currentUser;
+      u.name = document.getElementById("profInputName").value.trim();
+      u.email = document.getElementById("profInputEmail").value.trim();
+      u.department = document.getElementById("profInputDept").value.trim();
+      u.idNumber = document.getElementById("profInputIdNum").value.trim();
+      u.avatar = document.getElementById("profInputAvatar").value.trim() || u.avatar;
+      u.bio = document.getElementById("profInputBio").value.trim();
+
+      saveState();
+      updateHeaderAndSidebarUser();
+      populateProfileForm();
+      showToast("Profile changes saved successfully!", "success");
+    }
+
+    /**
+     * AUTHENTICATION & LOGIN DIALOGS
+     */
+    function openAuthModal() {
+      openModal("modalAuth");
+      switchAuthTab('login');
+    }
+
+    function switchAuthTab(tab) {
+      const loginF = document.getElementById("authLoginForm");
+      const regF = document.getElementById("authRegisterForm");
+      const demoP = document.getElementById("authDemoPanel");
+
+      const tLogin = document.getElementById("authTabLogin");
+      const tReg = document.getElementById("authTabRegister");
+      const tDemo = document.getElementById("authTabDemo");
+
+      loginF.classList.add("hidden");
+      regF.classList.add("hidden");
+      demoP.classList.add("hidden");
+
+      tLogin.className = "pb-2 text-slate-400 hover:text-slate-700 border-b-2 border-transparent";
+      tReg.className = "pb-2 text-slate-400 hover:text-slate-700 border-b-2 border-transparent";
+      tDemo.className = "pb-2 text-slate-400 hover:text-slate-700 border-b-2 border-transparent";
+
+      if (tab === 'login') {
+        loginF.classList.remove("hidden");
+        tLogin.className = "pb-2 text-brand-600 border-b-2 border-brand-600";
+      } else if (tab === 'register') {
+        regF.classList.remove("hidden");
+        tReg.className = "pb-2 text-brand-600 border-b-2 border-brand-600";
+      } else {
+        demoP.classList.remove("hidden");
+        tDemo.className = "pb-2 text-brand-600 border-b-2 border-brand-600";
+      }
+    }
+
+    function handleAuthLogin(e) {
+      e.preventDefault();
+      const email = document.getElementById("loginEmail").value.trim();
+      const role = document.getElementById("loginRole").value;
+
+      // Look up or construct
+      let user = appData.users.find(u => u.email.toLowerCase() === email.toLowerCase());
+      if (!user) {
+        user = {
+          id: "USR-" + Date.now(),
+          name: email.split('@')[0].replace('.', ' '),
+          email: email,
+          role: role,
+          department: "Academic Department",
+          avatar: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=160&q=80",
+          bio: "Institutional learner."
+        };
+        appData.users.push(user);
+      } else {
+        user.role = role;
+      }
+
+      appData.currentUser = user;
+      saveState();
+      closeModal("modalAuth");
+      updateHeaderAndSidebarUser();
+      navigateToHome();
+      showToast(`Welcome, ${user.name}!`, "success");
+    }
+
+    function handleAuthRegister(e) {
+      e.preventDefault();
+      const name = document.getElementById("regName").value.trim();
+      const email = document.getElementById("regEmail").value.trim();
+      const dept = document.getElementById("regDept").value.trim();
+      const role = document.getElementById("regRole").value;
+
+      const newUser = {
+        id: "USR-" + Date.now(),
+        name: name,
+        email: email,
+        department: dept,
+        role: role,
+        idNumber: "STU-" + Math.floor(1000 + Math.random() * 9000),
+        avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=160&q=80",
+        bio: "Registered portal user."
+      };
+
+      appData.users.push(newUser);
+      appData.currentUser = newUser;
+      saveState();
+      closeModal("modalAuth");
+      updateHeaderAndSidebarUser();
+      navigateToHome();
+      showToast(`Registration complete! Welcome, ${newUser.name}`, "success");
+    }
+
+    function handleLogout() {
+      showToast("Signed out of portal", "info");
+      openAuthModal();
+    }
+
+    /**
+     * MODAL & TOAST HELPERS
+     */
+    function openModal(id) {
+      const m = document.getElementById(id);
+      if (m) m.classList.remove("hidden");
+    }
+
+    function closeModal(id) {
+      const m = document.getElementById(id);
+      if (m) m.classList.add("hidden");
+    }
+
+    function toggleUserDropdown() {
+      const drop = document.getElementById("userDropdownMenu");
+      drop.classList.toggle("hidden");
+    }
+
+    function closeUserDropdown() {
+      const drop = document.getElementById("userDropdownMenu");
+      if (drop) drop.classList.add("hidden");
+    }
+
+    // Close dropdown when clicked outside
+    document.addEventListener("click", (e) => {
+      const pill = document.getElementById("userProfileNavPill");
+      const drop = document.getElementById("userDropdownMenu");
+      if (pill && drop && !pill.contains(e.target) && !drop.contains(e.target)) {
+        drop.classList.add("hidden");
+      }
+    });
+
+    // Mobile sidebar toggle
+    document.getElementById("mobileMenuBtn")?.addEventListener("click", () => {
+      const sb = document.getElementById("mainSidebar");
+      sb.classList.toggle("hidden");
+    });
+
+    function showToast(message, type = 'info') {
+      const container = document.getElementById("toastContainer");
+      if (!container) return;
+
+      const toast = document.createElement("div");
+      let icon = "fa-info-circle";
+      let bg = "bg-slate-900 text-white";
+
+      if (type === 'success') {
+        icon = "fa-check-circle";
+        bg = "bg-emerald-600 text-white shadow-emerald-500/30";
+      } else if (type === 'error') {
+        icon = "fa-circle-exclamation";
+        bg = "bg-rose-600 text-white shadow-rose-500/30";
+      }
+
+      toast.className = `${bg} px-4 py-3 rounded-2xl shadow-xl flex items-center gap-3 text-xs font-semibold pointer-events-auto transition-all transform translate-y-4 opacity-0`;
+      toast.innerHTML = `<i class="fa-solid ${icon} text-base"></i> <span>${escapeHtml(message)}</span>`;
+
+      container.appendChild(toast);
+
+      requestAnimationFrame(() => {
+        toast.classList.remove("translate-y-4", "opacity-0");
+      });
+
+      setTimeout(() => {
+        toast.classList.add("opacity-0", "translate-y-2");
+        setTimeout(() => toast.remove(), 300);
+      }, 3500);
+    }
+
+    // Utilities
+    function formatSecondsToMMSS(totalSec) {
+      const m = Math.floor(totalSec / 60);
+      const s = totalSec % 60;
+      return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
+    function getQuizCountForCourse(courseId) {
+      return (appData.quizzes || []).filter(q => q.courseId === courseId).length;
+    }
+
+    function getEnrollmentCountForCourse(courseId) {
+      return (appData.enrollments || []).filter(e => e.courseId === courseId).length;
+    }
+
+    function getTotalMaterialCount(course) {
+      if (!course.units) return 0;
+      return course.units.reduce((acc, u) => acc + (u.materials ? u.materials.length : 0), 0);
+    }
+
+    function getPdfCount(course) {
+      if (!course.units) return 0;
+      return course.units.reduce((acc, u) => acc + (u.materials ? u.materials.filter(m => m.type === 'pdf').length : 0), 0);
+    }
+
+    function getVideoCount(course) {
+      if (!course.units) return 0;
+      return course.units.reduce((acc, u) => acc + (u.materials ? u.materials.filter(m => m.type === 'video').length : 0), 0);
+    }
+
+    // Run on startup
+    window.addEventListener("DOMContentLoaded", initApp);
+  </script>
+</body>
+</html>
